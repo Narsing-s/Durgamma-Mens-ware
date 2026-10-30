@@ -85,8 +85,8 @@ begin
  values(v_order_id,v_order_number,trim(p_customer_name),lower(trim(p_email)),trim(p_phone),p_shipping_address,p_payment_method,
  case when p_payment_method='cod' then 'cod_due' else 'pending' end,v_subtotal,v_shipping,v_subtotal+v_shipping);
  insert into public.order_items(order_id,product_id,variant_id,product_name,sku,size,colour,unit_price_inr,quantity,line_total_inr)
- select v_order_id,(x->>'product_id')::uuid,(x->>'variant_id')::uuid,x->>'product_name',x->>'sku',x->>'size',x->>'colour',(x->>'unit_price_inr')::integer,(x->>'quantity')::integer,(x->>'line_total_inr')::integer
- from jsonb_array_elements(v_lines) as x;
+ select v_order_id,(item->>'product_id')::uuid,(item->>'variant_id')::uuid,item->>'product_name',item->>'sku',item->>'size',item->>'colour',(item->>'unit_price_inr')::integer,(item->>'quantity')::integer,(item->>'line_total_inr')::integer
+ from jsonb_array_elements(v_lines) as line(item);
  return query select v_order_id,v_order_number,v_subtotal,v_shipping,v_subtotal+v_shipping;
 end; $$;
 revoke all on function public.create_store_order(text,text,text,jsonb,text,jsonb) from public;
