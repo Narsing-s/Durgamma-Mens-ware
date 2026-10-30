@@ -36,7 +36,9 @@ export default function Checkout({items,onClose,onSuccess}:Props){
    const response=await fetch('/api/payments/razorpay/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await response.json();if(!response.ok)throw new Error(data.error||'Online payment could not be started.');activeRazorpayOrderId=data.razorpayOrderId;
    if(!window.Razorpay)throw new Error('Secure payment window is still loading. Please try again.');
-   const gateway=new window.Razorpay({key:data.keyId,amount:data.amount,currency:data.currency,order_id:data.razorpayOrderId,name:'DURGAMMA MENSWEAR',description:'Order '+data.orderNumber,prefill:data.customer,theme:{color:'#171713'},modal:{ondismiss:()=>{fetch('/api/payments/razorpay/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpayOrderId:data.razorpayOrderId})}).catch(()=>{});setBusy(false);}},handler:async(result:Record<string,string>)=>{
+   let paymentResponseReceived=false;
+   const gateway=new window.Razorpay({key:data.keyId,amount:data.amount,currency:data.currency,order_id:data.razorpayOrderId,name:'DURGAMMA MENSWEAR',description:'Order '+data.orderNumber,prefill:data.customer,theme:{color:'#171713'},modal:{ondismiss:()=>{if(!paymentResponseReceived)fetch('/api/payments/razorpay/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpayOrderId:data.razorpayOrderId})}).catch(()=>{});setBusy(false);}},handler:async(result:Record<string,string>)=>{
+    paymentResponseReceived=true;
     try{const verify=await fetch('/api/payments/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});const verified=await verify.json();if(!verify.ok)throw new Error(verified.error||'Payment verification is pending.');setSuccess('Payment confirmed. Order '+verified.orderNumber+' is placed.');}catch(err){setError(err instanceof Error?err.message:'Payment verification is pending.');}finally{setBusy(false);}
    }});
    gateway.open();
