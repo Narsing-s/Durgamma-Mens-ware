@@ -7,7 +7,7 @@ The current website is a polished storefront prototype. Its catalogue is demo da
 - Supabase Postgres: products, size/colour variants, stock, orders and order-item snapshots.
 - Server-only COD order API: validates customer/address/cart input, calculates prices from the database and reserves inventory in a database transaction.
 - Upstash Redis REST rate limiting is fail-closed: order creation remains unavailable until the Redis URL and token are configured. The current endpoint accepts COD only.
-- Razorpay: create payment orders on the server, verify signatures, and confirm payment only from a verified callback/webhook.
+- Razorpay server routes now create gateway orders, verify checkout signatures, and process signed idempotent webhook events. The customer-facing checkout UI, live credentials, catalog-to-variant mapping, and end-to-end tests remain launch requirements.
 - Cash on Delivery: create an order with cod_due payment status and a pending fulfilment status.
 - Vercel: host the Next.js storefront and server routes; store credentials only as encrypted environment variables.
 
@@ -25,7 +25,7 @@ Copy .env.example to .env.local for local development. Add production values in 
 
 ## Payment launch gate
 
-The current order API accepts Cash on Delivery only and requires Supabase plus Upstash configuration. Razorpay checkout is not connected. Before accepting online payments, implement server-side order creation, signature verification and webhook idempotency; test successful, failed, cancelled and duplicate webhook events in Razorpay test mode. COD also requires a trusted order API and operational order notifications.
+The COD endpoint requires Supabase plus Upstash configuration. Razorpay server endpoints are scaffolded at /api/payments/razorpay/order, /api/payments/razorpay/verify and /api/webhooks/razorpay. The current storefront still uses demo products and has no customer checkout form or real product-variant UUID mapping, so these endpoints are not yet wired to shoppers. Configure credentials only in Vercel environment variables, apply the SQL schema, connect the live catalog, and test success, failure, cancellation and duplicate webhook cases in Razorpay test mode before launch. COD also requires a trusted order API and operational order notifications.
 
 ## Launch checklist
 
