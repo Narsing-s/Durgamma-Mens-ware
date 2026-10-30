@@ -31,7 +31,8 @@ export default function Checkout({items,onClose,onSuccess}:Props){
    if(payment==='cod'){
     const response=await fetch('/api/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...body,paymentMethod:'cod'})});
     const data=await response.json();if(!response.ok)throw new Error(data.error||'Could not place your COD order.');
-    if(!Number.isInteger(data.subtotal)||!Number.isInteger(data.shipping)||!Number.isInteger(data.total)||data.subtotal+data.shipping!==data.total)throw new Error('The server returned an invalid order total. Please contact support before retrying.');\n    const adjusted=data.subtotal!==subtotal||data.shipping!==shipping;setSuccess('Order '+data.orderNumber+' placed. Subtotal '+money(data.subtotal)+' + shipping '+money(data.shipping)+'. Pay '+money(data.total)+' on delivery.'+(adjusted?' The live catalogue price changed; the server-confirmed amount is shown.':''));return;
+    if(!Number.isInteger(data.subtotal)||!Number.isInteger(data.shipping)||!Number.isInteger(data.total)||data.subtotal+data.shipping!==data.total)throw new Error('The server returned an invalid order total. Please contact support before retrying.');
+    const adjusted=data.subtotal!==subtotal||data.shipping!==shipping;setSuccess('Order '+data.orderNumber+' placed. Subtotal '+money(data.subtotal)+' + shipping '+money(data.shipping)+'. Pay '+money(data.total)+' on delivery.'+(adjusted?' The live catalogue price changed; the server-confirmed amount is shown.':''));return;
    }
    const response=await fetch('/api/payments/razorpay/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await response.json();if(!response.ok)throw new Error(data.error||'Online payment could not be started.');activeRazorpayOrderId=data.razorpayOrderId;
