@@ -20,7 +20,7 @@ function PiecePicker({title,items,value,onChange,optional=false}:{title:string;i
  return <div className="mix-picker"><div className="mix-picker-title"><span>{title}</span>{optional&&<button onClick={()=>onChange(null)}>NO LAYER</button>}</div><div className="mix-options">{items.map(p=><button key={p.id} className={value===p.id?"active":""} onClick={()=>onChange(p.id)}><img src={`https://images.unsplash.com/${p.image}?w=180&q=75&fit=crop`} alt="" loading="lazy"/><span><b>{p.name}</b><small>{p.shade} · ₹{p.price.toLocaleString("en-IN")}</small></span>{value===p.id&&<Check size={15}/>}</button>)}</div></div>
 }
 export default function MixMatchStudio({onAddLook}:{onAddLook:(ids:number[])=>void}){
- const [top,setTop]=useState(1),[bottom,setBottom]=useState(6),[layer,setLayer]=useState<number|null>(null);
+ const [top,setTop]=useState<number|null>(1),[bottom,setBottom]=useState<number|null>(6),[layer,setLayer]=useState<number|null>(null);
  const selected=useMemo(()=>[...tops,...bottoms,...layers].filter(p=>[top,bottom,layer].includes(p.id)),[top,bottom,layer]);
  const total=selected.reduce((sum,p)=>sum+p.price,0);
  return <section className="mix-studio" id="mix-studio">
