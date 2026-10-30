@@ -22,7 +22,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  const subtotal=mapped.reduce((sum,x)=>sum+(x.product?.price_inr||0)*x.item.quantity,0);
  const shipping=subtotal>=1999?0:99;
  useEffect(()=>{if(payment!=='online'||typeof window==='undefined')return;if(window.Razorpay){setSdkReady(true);return;}const script=document.createElement('script');script.src='https://checkout.razorpay.com/v1/checkout.js';script.async=true;script.onload=()=>setSdkReady(true);script.onerror=()=>setError('Secure payment could not load. Check your connection and try again.');document.body.appendChild(script);return()=>{script.remove();};},[payment]);
- async function submit(e:FormEvent){e.preventDefault();setError('');setSuccess('');
+ async function submit(e:FormEvent){e.preventDefault();setError('');setSuccess('');let activeRazorpayOrderId='';
   if(catalogState!=='ready'){setError('The live catalogue is not ready. Please try again shortly.');return;}
   if(missing.length){setError('Some items or selected sizes are not available in the live store inventory. Please contact the store to sync product names, sizes and stock before checkout.');return;}
   setBusy(true);
@@ -34,13 +34,13 @@ export default function Checkout({items,onClose,onSuccess}:Props){
     setSuccess('Order '+data.orderNumber+' placed. Pay '+money(data.total)+' on delivery.');return;
    }
    const response=await fetch('/api/payments/razorpay/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
-   const data=await response.json();if(!response.ok)throw new Error(data.error||'Online payment could not be started.');
+   const data=await response.json();if(!response.ok)throw new Error(data.error||'Online payment could not be started.');activeRazorpayOrderId=data.razorpayOrderId;
    if(!window.Razorpay)throw new Error('Secure payment window is still loading. Please try again.');
-   const gateway=new window.Razorpay({key:data.keyId,amount:data.amount,currency:data.currency,order_id:data.razorpayOrderId,name:'DURGAMMA MENSWEAR',description:'Order '+data.orderNumber,prefill:data.customer,theme:{color:'#171713'},modal:{ondismiss:()=>setBusy(false)},handler:async(result:Record<string,string>)=>{
+   const gateway=new window.Razorpay({key:data.keyId,amount:data.amount,currency:data.currency,order_id:data.razorpayOrderId,name:'DURGAMMA MENSWEAR',description:'Order '+data.orderNumber,prefill:data.customer,theme:{color:'#171713'},modal:{ondismiss:()=>{fetch('/api/payments/razorpay/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpayOrderId:data.razorpayOrderId})}).catch(()=>{});setBusy(false);}},handler:async(result:Record<string,string>)=>{
     try{const verify=await fetch('/api/payments/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result)});const verified=await verify.json();if(!verify.ok)throw new Error(verified.error||'Payment verification is pending.');setSuccess('Payment confirmed. Order '+verified.orderNumber+' is placed.');}catch(err){setError(err instanceof Error?err.message:'Payment verification is pending.');}finally{setBusy(false);}
    }});
    gateway.open();
-  }catch(err){setError(err instanceof Error?err.message:'Checkout failed. Please try again.');setBusy(false);}
+  }catch(err){if(activeRazorpayOrderId){fetch('/api/payments/razorpay/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpayOrderId:activeRazorpayOrderId})}).catch(()=>{});}setError(err instanceof Error?err.message:'Checkout failed. Please try again.');setBusy(false);}
  }
  return <div className="checkout-backdrop" role="dialog" aria-modal="true" aria-labelledby="checkout-title"><section className="checkout-panel"><header><button type="button" className="checkout-back" onClick={onClose}><ArrowLeft size={16}/> BACK TO BAG</button><button type="button" className="checkout-close" onClick={onClose} aria-label="Close checkout"><X/></button></header><div className="checkout-content"><div><p className="eyebrow">DURGAMMA MENSWEAR · SECURE CHECKOUT</p><h2 id="checkout-title">Delivery details<span>.</span></h2><p className="checkout-intro">Enter your details to place your order securely.</p>
  {catalogState==='loading'&&<p className="checkout-status"><LoaderCircle size={16}/> Loading live inventory…</p>}
