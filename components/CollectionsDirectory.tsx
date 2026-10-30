@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowUpRight, Check, Clock3, Shirt, Footprints, Dumbbell, Watch, BriefcaseBusiness, Layers3 } from 'lucide-react';
+import { ArrowUpRight, Check, Clock3 } from 'lucide-react';
 
 type Props = { onSelectCategory: (category: string) => void };
 
