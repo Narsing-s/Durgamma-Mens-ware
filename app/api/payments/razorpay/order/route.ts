@@ -33,9 +33,9 @@ export async function POST(request:NextRequest){
   const auth=Buffer.from(key+':'+secret).toString('base64');
   const response=await fetch('https://api.razorpay.com/v1/orders',{method:'POST',headers:{Authorization:'Basic '+auth,'Content-Type':'application/json'},body:JSON.stringify({amount:order.total_inr*100,currency:'INR',receipt:order.order_number,notes:{store_order_id:order.order_id,order_number:order.order_number}}),cache:'no-store'});
   const payment=await response.json();
-  if(!response.ok||!payment.id)throw new Error('Gateway order creation failed');
+  if(!response.ok||!payment.id||payment.currency!=='INR'||payment.amount!==order.total_inr*100)throw new Error('Gateway amount did not match the server-calculated order total');
   const {error:updateError}=await db.from('orders').update({razorpay_order_id:payment.id}).eq('id',order.order_id);
   if(updateError)throw new Error('Could not link gateway order');
-  return json({ok:true,orderNumber:order.order_number,orderId:order.order_id,razorpayOrderId:payment.id,amount:payment.amount,currency:'INR',keyId:key,customer:{name:b.customerName,email:b.email,contact:b.phone}},201);
+  return json({ok:true,orderNumber:order.order_number,orderId:order.order_id,razorpayOrderId:payment.id,subtotal:order.subtotal_inr,shipping:order.shipping_inr,total:order.total_inr,amount:payment.amount,currency:'INR',keyId:key,customer:{name:b.customerName,email:b.email,contact:b.phone}},201);
  }catch{await db.rpc('cancel_unpaid_store_order',{p_order_id:order.order_id});return json({error:'Payment setup failed and the reserved stock has been released. Please retry or choose Cash on Delivery.'},502);}
 }

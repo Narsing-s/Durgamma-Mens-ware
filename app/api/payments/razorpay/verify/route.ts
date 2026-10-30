@@ -12,12 +12,12 @@ export async function POST(request:NextRequest){
  const expected=createHmac('sha256',secret).update(orderId+'|'+paymentId).digest();
  const supplied=Buffer.from(signature,'hex');if(supplied.length!==expected.length||!timingSafeEqual(expected,supplied))return json({error:'Payment signature could not be verified.'},400);
  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
- const {data:order,error}=await db.from('orders').select('id,order_number,payment_status').eq('razorpay_order_id',orderId).maybeSingle();
+ const {data:order,error}=await db.from('orders').select('id,order_number,payment_status,total_inr,payment_method').eq('razorpay_order_id',orderId).maybeSingle();
  if(error||!order)return json({error:'Order not found.'},404);
  if(order.payment_status==='paid')return json({ok:true,orderNumber:order.order_number,message:'Payment already confirmed.'});
  const auth=Buffer.from(process.env.RAZORPAY_KEY_ID+':'+secret).toString('base64');
  const gateway=await fetch('https://api.razorpay.com/v1/payments/'+encodeURIComponent(paymentId),{headers:{Authorization:'Basic '+auth},cache:'no-store'});
- const payment=await gateway.json();if(!gateway.ok||payment.order_id!==orderId||payment.status!=='captured')return json({error:'Payment is not captured yet. Your order remains pending.'},409);
+ const payment=await gateway.json();if(!gateway.ok||payment.order_id!==orderId||payment.status!=='captured'||payment.currency!=='INR'||payment.amount!==order.total_inr*100||order.payment_method!=='online')return json({error:'Payment is not captured yet. Your order remains pending.'},409);
  const {error:updateError}=await db.from('orders').update({payment_status:'paid',razorpay_payment_id:paymentId,order_status:'confirmed'}).eq('id',order.id).eq('payment_status','pending');
  if(updateError)return json({error:'Payment was received but order confirmation is pending. Contact support with order '+order.order_number+'.'},503);
  const {data:confirmed,error:confirmError}=await db.from('orders').select('payment_status').eq('id',order.id).single();
