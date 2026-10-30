@@ -37,5 +37,5 @@ export async function POST(request:NextRequest){
   const {error:updateError}=await db.from('orders').update({razorpay_order_id:payment.id}).eq('id',order.order_id);
   if(updateError)throw new Error('Could not link gateway order');
   return json({ok:true,orderNumber:order.order_number,orderId:order.order_id,razorpayOrderId:payment.id,amount:payment.amount,currency:'INR',keyId:key,customer:{name:b.customerName,email:b.email,contact:b.phone}},201);
- }catch{return json({error:'Payment setup failed. Contact support before retrying; do not make another payment attempt.'},502);}
+ }catch{await db.rpc('cancel_unpaid_store_order',{p_order_id:order.order_id});return json({error:'Payment setup failed and the reserved stock has been released. Please retry or choose Cash on Delivery.'},502);}
 }
