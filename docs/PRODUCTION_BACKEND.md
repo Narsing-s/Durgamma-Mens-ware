@@ -14,7 +14,7 @@ The current website is a polished storefront prototype. Its catalogue is demo da
 ## Supabase
 
 1. Create a Supabase project in a region suitable for Indian customers.
-2. Open SQL Editor and review/apply supabase/schema.sql.
+2. Open SQL Editor and review/apply supabase/schema.sql. For an existing installation, also run supabase/migrations/20261030_payment_recovery.sql.
 3. Add products and their size/colour variants through a trusted admin workflow.
 4. Keep Row Level Security enabled. The schema exposes only active catalogue rows publicly. Orders and order items have no public read/write policies.
 5. The server-side COD endpoint calls the database function with the service role; it applies input validation and Upstash Redis rate limiting. Do not grant the function to anon or authenticated.
@@ -25,7 +25,7 @@ Copy .env.example to .env.local for local development. Add production values in 
 
 ## Payment launch gate
 
-The COD endpoint requires Supabase plus Upstash configuration. Razorpay server endpoints are scaffolded at /api/payments/razorpay/order, /api/payments/razorpay/verify and /api/webhooks/razorpay. The current storefront still uses demo products and has no customer checkout form or real product-variant UUID mapping, so these endpoints are not yet wired to shoppers. Configure credentials only in Vercel environment variables, apply the SQL schema, connect the live catalog, and test success, failure, cancellation and duplicate webhook cases in Razorpay test mode before launch. COD also requires a trusted order API and operational order notifications.
+The COD endpoint requires Supabase plus Upstash configuration. Razorpay server endpoints are scaffolded at /api/payments/razorpay/order, /api/payments/razorpay/verify and /api/webhooks/razorpay. The storefront still displays demo product data. Checkout matches those display names and sizes against active Supabase catalogue entries; add matching products and size variants before attempting a real order. Configure credentials only in Vercel environment variables, apply the SQL schema, connect the live catalog, and test success, failure, cancellation and duplicate webhook cases in Razorpay test mode before launch. COD also requires a trusted order API and operational order notifications.
 
 ## Launch checklist
 
