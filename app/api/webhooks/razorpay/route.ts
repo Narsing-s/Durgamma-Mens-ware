@@ -11,14 +11,22 @@ export async function POST(request:NextRequest){
  if(provided.length!==expected.length||!timingSafeEqual(expected,provided))return NextResponse.json({error:'Invalid webhook signature.'},{status:400});
  let event:Record<string,any>;try{event=JSON.parse(raw);}catch{return NextResponse.json({error:'Invalid payload.'},{status:400});}
  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
- const {error:insertError}=await db.from('payment_webhook_events').insert({event_id:eventId,provider:'razorpay'});
- if(insertError){if(insertError.code==='23505')return NextResponse.json({ok:true,duplicate:true});return NextResponse.json({error:'Could not record event.'},{status:503});}
  const entity=event.payload?.payment?.entity;
  if(entity?.order_id&&event.event==='payment.captured'){
-  const {error}=await db.from('orders').update({payment_status:'paid',razorpay_payment_id:entity.id,order_status:'confirmed'}).eq('razorpay_order_id',entity.order_id).eq('payment_status','pending');
-  if(error)return NextResponse.json({error:'Could not confirm order.'},{status:503});
+  const {data:order,error:lookupError}=await db.from('orders').select('id,payment_status').eq('razorpay_order_id',entity.order_id).maybeSingle();
+  if(lookupError||!order)return NextResponse.json({error:'Order not found for captured payment.'},{status:503});
+  if(order.payment_status!=='paid'){
+   const {error}=await db.from('orders').update({payment_status:'paid',razorpay_payment_id:entity.id,order_status:'confirmed'}).eq('id',order.id).eq('payment_status','pending');
+   if(error)return NextResponse.json({error:'Could not confirm order.'},{status:503});
+  }
  }else if(entity?.order_id&&event.event==='payment.failed'){
-  await db.from('orders').update({payment_status:'failed'}).eq('razorpay_order_id',entity.order_id).eq('payment_status','pending');
+  const {data:order,error:lookupError}=await db.from('orders').select('id').eq('razorpay_order_id',entity.order_id).maybeSingle();
+  if(lookupError)return NextResponse.json({error:'Could not locate failed payment order.'},{status:503});
+  if(order){
+   const {error}=await db.rpc('cancel_unpaid_store_order',{p_order_id:order.id});
+   if(error)return NextResponse.json({error:'Could not release stock for failed payment.'},{status:503});
+  }
  }
- return NextResponse.json({ok:true});
-}
+ const {error:insertError}=await db.from('payment_webhook_events').insert({event_id:eventId,provider:'razorpay'});
+ if(insertError&&insertError.code!=='23505')return NextResponse.json({error:'Could not record event.'},{status:503});
+ return NextResponse.json({ok:true,duplicate:insertError?.code==='23505'});
