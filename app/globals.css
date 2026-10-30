@@ -138,3 +138,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .brand-tile i{font-style:normal;font-size:7px;letter-spacing:1.4px;margin-top:23px}
 @media(max-width:850px){.brand-collections{padding:72px 5%}.brand-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-tile{min-height:210px}}
 @media(max-width:480px){.brand-tiles{gap:8px}.brand-tile{min-height:175px;padding:15px}.brand-tile strong{font-size:17px}}
+
+
+/* Budget-led collection controls */
+.price-filter-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0 10px;border-bottom:1px solid #e6e0d5}
+.price-filter-row>span{font-size:8px;letter-spacing:1.7px;color:#8c7958;white-space:nowrap}
+.price-filter-row>div{display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end}
+.price-filter-row button,.clear-filters{border:1px solid #ded8cc;background:transparent;color:#555247;padding:9px 11px;font-size:8px;letter-spacing:1px;transition:background .2s,border-color .2s,color .2s}
+.price-filter-row button:hover,.price-filter-row button.active{background:#1b1b17;border-color:#1b1b17;color:#f5f0e6}
+.clear-filters{margin-left:12px;color:#967b4e;border-color:#c9b995;cursor:pointer}
+.clear-filters:hover{background:#eee8dc}
+@media(max-width:600px){.price-filter-row{align-items:flex-start;flex-direction:column}.price-filter-row>div{justify-content:flex-start}.price-filter-row button{padding:9px 8px;font-size:7px}.clear-filters{margin:8px 0 0}}
