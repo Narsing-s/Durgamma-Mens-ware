@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { ArrowRight, Check, Layers3, Shirt, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Layers3, Sparkles } from "lucide-react";
 
 type Piece = { id:number; name:string; price:number; image:string; shade:string };
 const tops:Piece[]=[
