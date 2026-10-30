@@ -115,3 +115,26 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .mix-note{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:25px;font-size:7px;letter-spacing:1.5px;color:#aaa69a}
 @media(max-width:850px){.mix-studio{padding:75px 5%}.mix-workspace{grid-template-columns:1fr}.mix-preview{position:relative;top:auto}.mix-preview-images{grid-template-rows:240px 160px}}
 @media(max-width:520px){.mix-studio{padding:60px 5%}.mix-options{grid-template-columns:1fr}.mix-preview{padding:12px}.mix-preview-images{grid-template-rows:210px 125px}.mix-add-row{align-items:stretch;flex-direction:column}.mix-add-row>button{justify-content:space-between}.mix-preview-bottom b{font-size:14px}.mix-preview-bottom strong{font-size:15px}}
+
+
+/* Signature label collections */
+.brand-collections{padding:88px 7%;background:#eae6dc;color:#1b1b17}
+.brand-collections-head{max-width:650px;margin:0 auto 34px;text-align:center}
+.brand-collections-head .eyebrow{font-size:9px;letter-spacing:2px;color:#92764a}
+.brand-collections-head h2{font:500 clamp(38px,5vw,58px)/1.05 'Playfair Display',serif;margin:13px 0}
+.brand-collections-head h2 em{color:#9b8051}
+.brand-collections-head>p:last-child{font-size:12px;line-height:1.8;color:#777;max-width:430px;margin:0 auto}
+.brand-tiles{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
+.brand-tile{min-height:235px;padding:23px;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-end;text-align:left;color:#f8f4ea;border:1px solid #ffffff24;position:relative;overflow:hidden;isolation:isolate;transition:transform .25s,border-color .25s}
+.brand-tile:before{content:"";position:absolute;inset:0;z-index:-2;background:linear-gradient(145deg,#57594e,#1a1c18)}
+.brand-tile:after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(0deg,#10110fe8,transparent 80%)}
+.brand-tile.oxford:before{background:linear-gradient(145deg,#b3a58d,#484238)}
+.brand-tile.denim:before{background:linear-gradient(145deg,#607b8b,#1d303b)}
+.brand-tile.noir:before{background:linear-gradient(145deg,#61574f,#151412)}
+.brand-tile:hover,.brand-tile.active{transform:translateY(-4px);border-color:#c5a977}
+.brand-tile>span{font-size:7px;letter-spacing:1.8px;color:#d5bd8e}
+.brand-tile strong{font:500 clamp(18px,2vw,25px) 'Playfair Display',serif;margin:9px 0 5px}
+.brand-tile small{font-size:10px;color:#d1ccc1}
+.brand-tile i{font-style:normal;font-size:7px;letter-spacing:1.4px;margin-top:23px}
+@media(max-width:850px){.brand-collections{padding:72px 5%}.brand-tiles{grid-template-columns:repeat(2,minmax(0,1fr))}.brand-tile{min-height:210px}}
+@media(max-width:480px){.brand-tiles{gap:8px}.brand-tile{min-height:175px;padding:15px}.brand-tile strong{font-size:17px}}
