@@ -8,10 +8,10 @@ export const dynamic = 'force-dynamic';
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
-async function enforceRateLimit(request: NextRequest): Promise<boolean> {
+async function enforceRateLimit(request: NextRequest): Promise<'ok' | 'limited' | 'unavailable'> {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!redisUrl || !redisToken) return false;
+  if (!redisUrl || !redisToken) return 'unavailable';
   const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || 'unknown';
   const ip = forwarded.split(',')[0].trim();
   const key = 'durgamma:order-rate:' + createHash('sha256').update(ip).digest('hex').slice(0, 32);
@@ -22,11 +22,11 @@ async function enforceRateLimit(request: NextRequest): Promise<boolean> {
       body: JSON.stringify([['INCR', key], ['EXPIRE', key, 60]]),
       cache: 'no-store',
     });
-    if (!response.ok) return false;
+    if (!response.ok) return 'unavailable';
     const result = await response.json();
-    return Number(result?.[0]?.result) <= 5;
+    return Number(result?.[0]?.result) <= 5 ? 'ok' : 'limited';
   } catch {
-    return false;
+    return 'unavailable';
   }
 }
 
@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return json({ error: 'Order service is not configured yet.' }, 503);
 
-  if (!(await enforceRateLimit(request))) {
-    return json({ error: 'Order protection is unavailable or the request limit was reached. Please try again shortly.' }, 429);
-  }
+  const rateLimit = await enforceRateLimit(request);
+  if (rateLimit === 'limited') return json({ error: 'Too many order attempts. Please try again in a minute.' }, 429);
+  if (rateLimit === 'unavailable') return json({ error: 'Order protection is not configured. Please try again later.' }, 503);
 
   let body: Record<string, unknown>;
   try {
