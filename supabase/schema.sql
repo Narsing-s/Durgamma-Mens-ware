@@ -61,13 +61,13 @@ declare
  v_order_number text:='DMW-'||upper(substr(replace(gen_random_uuid()::text,'-',''),1,10));
  v_subtotal integer:=0; v_shipping integer:=0; v_item jsonb;
  v_variant public.product_variants%rowtype; v_product public.products%rowtype;
- v_qty integer; v_line integer;
+ v_qty integer; v_line integer; v_lines jsonb:='[]'::jsonb;
 begin
  if length(trim(coalesce(p_customer_name,''))) not between 2 and 100 then raise exception 'Invalid customer name'; end if;
  if length(trim(coalesce(p_email,'')))>254 or position('@' in coalesce(p_email,''))<2 then raise exception 'Invalid email'; end if;
  if length(regexp_replace(coalesce(p_phone,''),'[^0-9]','','g')) not between 10 and 15 then raise exception 'Invalid phone number'; end if;
- if p_payment_method not in ('online','cod') then raise exception 'Unsupported payment method'; end if;
- if jsonb_typeof(p_shipping_address)<>'object' or jsonb_typeof(p_items)<>'array' or jsonb_array_length(p_items) not between 1 and 20 then raise exception 'Invalid address or cart'; end if;
+ if p_payment_method is null or p_payment_method not in ('online','cod') then raise exception 'Unsupported payment method'; end if;
+ if coalesce(jsonb_typeof(p_shipping_address),'')<>'object' or coalesce(jsonb_typeof(p_items),'')<>'array' or coalesce(jsonb_array_length(p_items),0) not between 1 and 20 then raise exception 'Invalid address or cart'; end if;
  for v_item in select value from jsonb_array_elements(p_items) loop
   v_qty:=(v_item->>'quantity')::integer;
   if v_qty not between 1 and 10 then raise exception 'Invalid item quantity'; end if;
@@ -78,13 +78,15 @@ begin
   if not found then raise exception 'A selected product is unavailable'; end if;
   v_line:=v_product.price_inr*v_qty; v_subtotal:=v_subtotal+v_line;
   update public.product_variants set stock=stock-v_qty where id=v_variant.id;
-  insert into public.order_items(order_id,product_id,variant_id,product_name,sku,size,colour,unit_price_inr,quantity,line_total_inr)
-  values(v_order_id,v_product.id,v_variant.id,v_product.name,v_variant.sku,v_variant.size,v_variant.colour,v_product.price_inr,v_qty,v_line);
+  v_lines:=v_lines||jsonb_build_array(jsonb_build_object('product_id',v_product.id,'variant_id',v_variant.id,'product_name',v_product.name,'sku',v_variant.sku,'size',v_variant.size,'colour',v_variant.colour,'unit_price_inr',v_product.price_inr,'quantity',v_qty,'line_total_inr',v_line));
  end loop;
  v_shipping:=case when v_subtotal>=1999 then 0 else 99 end;
  insert into public.orders(id,order_number,customer_name,email,phone,shipping_address,payment_method,payment_status,subtotal_inr,shipping_inr,total_inr)
  values(v_order_id,v_order_number,trim(p_customer_name),lower(trim(p_email)),trim(p_phone),p_shipping_address,p_payment_method,
  case when p_payment_method='cod' then 'cod_due' else 'pending' end,v_subtotal,v_shipping,v_subtotal+v_shipping);
+ insert into public.order_items(order_id,product_id,variant_id,product_name,sku,size,colour,unit_price_inr,quantity,line_total_inr)
+ select v_order_id,(x->>'product_id')::uuid,(x->>'variant_id')::uuid,x->>'product_name',x->>'sku',x->>'size',x->>'colour',(x->>'unit_price_inr')::integer,(x->>'quantity')::integer,(x->>'line_total_inr')::integer
+ from jsonb_array_elements(v_lines) as x;
  return query select v_order_id,v_order_number,v_subtotal,v_shipping,v_subtotal+v_shipping;
 end; $$;
 revoke all on function public.create_store_order(text,text,text,jsonb,text,jsonb) from public;
