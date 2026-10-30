@@ -27,3 +27,4 @@ export async function POST(request:NextRequest){
  const {error:insertError}=await db.from('payment_webhook_events').insert({event_id:eventId,provider:'razorpay'});
  if(insertError&&insertError.code!=='23505')return NextResponse.json({error:'Could not record event.'},{status:503});
  return NextResponse.json({ok:true,duplicate:insertError?.code==='23505'});
+}
