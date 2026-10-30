@@ -14,9 +14,10 @@ async function enforceRateLimit(request: NextRequest): Promise<'ok' | 'limited' 
   if (!redisUrl || !redisToken) return 'unavailable';
   const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || 'unknown';
   const ip = forwarded.split(',')[0].trim();
+  if (!ip || ip === 'unknown') return 'unavailable';
   const key = 'durgamma:order-rate:' + createHash('sha256').update(ip).digest('hex').slice(0, 32);
   try {
-    const response = await fetch(redisUrl.replace(/\\/$/, '') + '/pipeline', {
+    const response = await fetch(redisUrl.replace(/\/$/, '') + '/pipeline', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + redisToken, 'Content-Type': 'application/json' },
       body: JSON.stringify([['INCR', key], ['EXPIRE', key, 60]]),
@@ -35,6 +36,11 @@ function validText(value: unknown, min: number, max: number): value is string {
 }
 
 export async function POST(request: NextRequest) {
+  const origin = request.headers.get('origin');
+  const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
+  if (origin && allowedOrigin && new URL(origin).origin !== new URL(allowedOrigin).origin) {
+    return json({ error: 'Invalid request origin.' }, 403);
+  }
   const contentLength = Number(request.headers.get('content-length') || 0);
   if (contentLength > 16_000) return json({ error: 'Request is too large.' }, 413);
 
@@ -62,6 +68,7 @@ export async function POST(request: NextRequest) {
       !validText(body.email, 5, 254) ||
       !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email) ||
       !validText(body.phone, 10, 20) ||
+      (body.phone as string).replace(/[^0-9]/g, '').length < 10 ||
       !body.shippingAddress || typeof body.shippingAddress !== 'object' ||
       Array.isArray(body.shippingAddress) ||
       !Array.isArray(body.items) || body.items.length < 1 || body.items.length > 20) {
