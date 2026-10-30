@@ -20,6 +20,7 @@ create table if not exists public.orders (
  payment_method text not null check(payment_method in ('online','cod')),
  order_status text not null default 'pending' check(order_status in ('pending','confirmed','packed','shipped','delivered','cancelled')),
  payment_status text not null default 'pending' check(payment_status in ('pending','paid','cod_due','refunded','failed')),
+ razorpay_order_id text unique, razorpay_payment_id text unique,
  subtotal_inr integer not null check(subtotal_inr>=0), shipping_inr integer not null check(shipping_inr>=0),
  total_inr integer not null check(total_inr=subtotal_inr+shipping_inr),
  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
@@ -91,3 +92,11 @@ begin
 end; $$;
 revoke all on function public.create_store_order(text,text,text,jsonb,text,jsonb) from public;
 -- Grant only after a trusted, rate-limited server API is implemented and reviewed.
+
+-- Webhook idempotency: a provider event can only be processed once.
+create table if not exists public.payment_webhook_events (
+ event_id text primary key, provider text not null check(provider='razorpay'), received_at timestamptz not null default now()
+);
+alter table public.payment_webhook_events enable row level security;
+-- Trusted server routes use the service role only. Never expose this key in the browser.
+grant execute on function public.create_store_order(text,text,text,jsonb,text,jsonb) to service_role;
