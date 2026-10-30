@@ -20,12 +20,9 @@ export async function POST(request:NextRequest){
    if(error)return NextResponse.json({error:'Could not confirm order.'},{status:503});
   }
  }else if(entity?.order_id&&event.event==='payment.failed'){
-  const {data:order,error:lookupError}=await db.from('orders').select('id').eq('razorpay_order_id',entity.order_id).maybeSingle();
-  if(lookupError)return NextResponse.json({error:'Could not locate failed payment order.'},{status:503});
-  if(order){
-   const {error}=await db.rpc('cancel_unpaid_store_order',{p_order_id:order.id});
-   if(error)return NextResponse.json({error:'Could not release stock for failed payment.'},{status:503});
-  }
+  // A failed payment attempt may be retried inside the same Razorpay checkout.
+  // Inventory is released only when the customer dismisses/cancels checkout.
+
  }
  const {error:insertError}=await db.from('payment_webhook_events').insert({event_id:eventId,provider:'razorpay'});
  if(insertError&&insertError.code!=='23505')return NextResponse.json({error:'Could not record event.'},{status:503});
