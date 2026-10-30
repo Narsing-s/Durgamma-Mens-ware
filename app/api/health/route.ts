@@ -12,7 +12,7 @@ export function GET() {
     service: 'durgamma-menswear-storefront',
     integrations: { supabase: supabaseConfigured, orderProtection: orderProtectionConfigured, razorpay: razorpayConfigured },
     checkout: supabaseConfigured && orderProtectionConfigured ? 'cod-api-ready-pending-live-tests' : 'not-configured',
-    onlinePayments: razorpayConfigured ? 'credentials-present-pending-implementation-and-tests' : 'not-configured',
+    onlinePayments: razorpayConfigured ? 'server-routes-present-pending-checkout-ui-and-live-tests' : 'not-configured',
     timestamp: new Date().toISOString(),
   }, { headers: { 'Cache-Control': 'no-store' } });
 }
