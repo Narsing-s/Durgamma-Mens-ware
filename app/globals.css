@@ -117,29 +117,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @media(max-width:520px){.mix-studio{padding:60px 5%}.mix-options{grid-template-columns:1fr}.mix-preview{padding:12px}.mix-preview-images{grid-template-rows:210px 125px}.mix-add-row{align-items:stretch;flex-direction:column}.mix-add-row>button{justify-content:space-between}.mix-preview-bottom b{font-size:14px}.mix-preview-bottom strong{font-size:15px}}
 
 
-/* Signature label collections */
-
-
-.brand-collections-head .eyebrow{font-size:9px;letter-spacing:2px;color:#92764a}
-.brand-collections-head h2{font:500 clamp(38px,5vw,58px)/1.05 'Playfair Display',serif;margin:13px 0}
-.brand-collections-head h2 em{color:#9b8051}
-.brand-collections-head>p:last-child{font-size:12px;line-height:1.8;color:#777;max-width:430px;margin:0 auto}
-
-
-
-
-
-
-
-
-
-
-
-
-@media(max-width:850px){}
-@media(max-width:480px){}
-
-
 /* Budget-led collection controls */
 .price-filter-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0 10px;border-bottom:1px solid #e6e0d5}
 .price-filter-row>span{font-size:8px;letter-spacing:1.7px;color:#8c7958;white-space:nowrap}
@@ -152,10 +129,3 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 
 
 
-.price-filter-row{display:flex;justify-content:space-between;align-items:center;gap:15px;padding:14px 0;border-bottom:1px solid #e5e0d6;margin-bottom:17px}
-.price-filter-row>span{font-size:8px;letter-spacing:1.5px;color:#8a806e}
-.price-filter-row>div{display:flex;gap:8px;flex-wrap:wrap}
-.price-filter-row button{border:1px solid #ded8cc;background:transparent;padding:9px 12px;font-size:8px;letter-spacing:.8px;color:#6e6a61}
-.price-filter-row button.active,.price-filter-row button:hover{background:#171713;color:#fff;border-color:#171713}
-.clear-filters{border:0;background:none;color:#987e50;font-size:8px;letter-spacing:1px;margin-left:12px}
-@media(max-width:600px){.price-filter-row{align-items:flex-start;flex-direction:column}.price-filter-row>div{gap:6px}.price-filter-row button{padding:8px 9px;font-size:7px}}
