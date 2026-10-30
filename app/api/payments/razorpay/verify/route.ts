@@ -20,5 +20,7 @@ export async function POST(request:NextRequest){
  const payment=await gateway.json();if(!gateway.ok||payment.order_id!==orderId||payment.status!=='captured')return json({error:'Payment is not captured yet. Your order remains pending.'},409);
  const {error:updateError}=await db.from('orders').update({payment_status:'paid',razorpay_payment_id:paymentId,order_status:'confirmed'}).eq('id',order.id).eq('payment_status','pending');
  if(updateError)return json({error:'Payment was received but order confirmation is pending. Contact support with order '+order.order_number+'.'},503);
+ const {data:confirmed,error:confirmError}=await db.from('orders').select('payment_status').eq('id',order.id).single();
+ if(confirmError||confirmed?.payment_status!=='paid')return json({error:'Payment was received but order confirmation is pending. Contact support with order '+order.order_number+'.'},503);
  return json({ok:true,orderNumber:order.order_number,message:'Payment verified and order confirmed.'});
 }
