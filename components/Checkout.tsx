@@ -36,6 +36,8 @@ export default function Checkout({items,onClose,onSuccess}:Props){
    }
    const response=await fetch('/api/payments/razorpay/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await response.json();if(!response.ok)throw new Error(data.error||'Online payment could not be started.');activeRazorpayOrderId=data.razorpayOrderId;
+   const expectedTotal=subtotal+shipping;
+   if(!Number.isInteger(data.subtotal)||!Number.isInteger(data.shipping)||!Number.isInteger(data.total)||data.subtotal+data.shipping!==data.total||data.total*100!==data.amount||data.amount!==expectedTotal*100||data.currency!=='INR')throw new Error('The live product total changed or failed verification. Your reserved order will be cancelled; refresh your bag and review the updated total.');
    if(!window.Razorpay)throw new Error('Secure payment window is still loading. Please try again.');
    let paymentResponseReceived=false;
    const gateway=new window.Razorpay({key:data.keyId,amount:data.amount,currency:data.currency,order_id:data.razorpayOrderId,name:'DURGAMMA MENSWEAR',description:'Order '+data.orderNumber,prefill:data.customer,theme:{color:'#171713'},modal:{ondismiss:()=>{if(!paymentResponseReceived)fetch('/api/payments/razorpay/cancel',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({razorpayOrderId:data.razorpayOrderId})}).catch(()=>{});setBusy(false);}},handler:async(result:Record<string,string>)=>{
