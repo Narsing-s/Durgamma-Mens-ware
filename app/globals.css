@@ -13,3 +13,36 @@
 @media(hover:none){.quick-add{opacity:1}}
 
 .size-guide-link{color:#9b8255;text-decoration:underline;text-underline-offset:3px;font-size:8px;letter-spacing:.08em}.size-guide-link:hover{color:#171713}.skip-link{position:absolute;left:12px;top:-60px;z-index:100;background:#171713;color:white;padding:12px 16px;font-size:12px}.skip-link:focus{top:12px}
+
+
+/* Style Atelier — signature interactive shopping experience */
+.style-atelier{display:grid;grid-template-columns:.82fr 1.18fr;background:#191a16;color:#f4f0e7;padding:88px 8%;gap:8%;position:relative;overflow:hidden}
+.style-atelier:before{content:"";position:absolute;width:430px;height:430px;border:1px solid #ffffff12;border-radius:50%;left:-240px;bottom:-290px;box-shadow:0 0 0 45px #ffffff08,0 0 0 90px #ffffff05;pointer-events:none}
+.atelier-intro{position:relative;display:flex;flex-direction:column;align-items:flex-start;justify-content:center}
+.atelier-intro .eyebrow{color:#c2a878}
+.atelier-intro h2{font:500 clamp(42px,5vw,66px)/1.04 'Playfair Display',serif;margin:18px 0}
+.atelier-intro h2 em{color:#c4a977}
+.atelier-intro>p:not(.eyebrow){font-size:12px;line-height:1.9;color:#b4b1a7;max-width:300px}
+.atelier-mark{margin-top:55px;border:1px solid #c4a977;border-radius:50%;width:76px;height:76px;display:grid;place-content:center;text-align:center;font:22px 'Playfair Display',serif;color:#d2bc91}
+.atelier-mark span{font:6px 'DM Sans',sans-serif;letter-spacing:1px;margin-top:3px}
+.atelier-builder{position:relative;border-top:1px solid #ffffff2b}
+.atelier-step{padding:20px 0;border-bottom:1px solid #ffffff24}
+.atelier-step>span,.atelier-result>div>span{font-size:8px;letter-spacing:2px;color:#c5a977}
+.atelier-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:13px}
+.atelier-options button,.palette-options button{border:1px solid #ffffff2b;background:#ffffff08;color:#f2eee5;text-align:left;padding:13px;min-width:0;transition:.2s}
+.atelier-options button.selected,.palette-options button.selected{border-color:#c5a977;background:#c5a97718}
+.atelier-options b,.palette-options b{display:block;font-size:11px;font-weight:500}
+.atelier-options small{display:block;font-size:9px;color:#aaa79d;margin-top:5px;line-height:1.5}
+.fit-options{grid-template-columns:repeat(3,minmax(0,1fr))}
+.palette-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:13px}
+.palette-options button{display:flex;flex-direction:column;gap:11px}
+.swatches{display:flex}
+.swatches i{width:20px;height:20px;border-radius:50%;border:2px solid #191a16;margin-right:-4px}
+.atelier-result{display:flex;justify-content:space-between;align-items:center;gap:18px;padding-top:22px}
+.atelier-result h3{font:500 22px 'Playfair Display',serif;margin:8px 0}
+.atelier-result p{font-size:10px;color:#aaa79d;line-height:1.7;margin:0;max-width:300px}
+.atelier-result>button{border:0;background:#c5a977;color:#171713;padding:15px 17px;display:flex;align-items:center;gap:15px;white-space:nowrap;font-size:8px;letter-spacing:1px}
+.atelier-result>button:hover{background:#dfc99d}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #b79a61;outline-offset:3px}
+@media(max-width:850px){.style-atelier{grid-template-columns:1fr;gap:30px;padding:70px 6%}.atelier-mark{display:none}}
+@media(max-width:520px){.style-atelier{padding:60px 5%}.atelier-options{grid-template-columns:1fr 1fr}.fit-options{grid-template-columns:1fr}.palette-options{grid-template-columns:1fr 1fr}.atelier-result{align-items:flex-start;flex-direction:column}.atelier-result>button{width:100%;justify-content:space-between}.atelier-intro h2{font-size:48px}}
