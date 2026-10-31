@@ -2,9 +2,9 @@
 
 ## Current storefront state
 
-The storefront uses the Durgamma charcoal, ivory and muted-gold design system. It includes search, category and budget filters, sorting, wishlist, a persistent local shopping bag, size guide, Style Finder and Mix & Match Studio. Product discovery supports category, budget, search and sort controls without repeating the same navigation actions.
+The storefront uses the Durgamma charcoal, ivory and muted-gold design system. When Supabase is configured, the shop page reads active products, prices, descriptions, image URLs and active size/colour variants from `/api/catalog`. Search, dynamic categories, budget filters, sorting and wishlist are kept together in one shop section. The separate static outfit builder was removed; Style Finder remains the single guided-discovery tool.
 
-The shopping page still contains demo catalogue records and sample imagery. The checkout fetches the active Supabase catalogue and matches cart products and sizes to active database variants. Before accepting orders, replace demo content and ensure every displayed product and size has a matching active database record.
+When Supabase is not configured, the shop displays a clearly labelled sample preview and disables add-to-bag. Preview data cannot be checked out. With Supabase configured, only active database products appear; quick-add is enabled only for sizes with stock. The bag stores the exact database variant ID, and checkout revalidates that same variant and quantity against live inventory. Keep the catalogue populated with accurate, store-owned photography and product data.
 
 ## Architecture
 

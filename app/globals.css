@@ -47,50 +47,6 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 @media(max-width:850px){.style-atelier{grid-template-columns:1fr;gap:30px;padding:70px 6%}.atelier-mark{display:none}}
 @media(max-width:520px){.style-atelier{padding:60px 5%}.atelier-options{grid-template-columns:1fr 1fr}.fit-options{grid-template-columns:1fr}.palette-options{grid-template-columns:1fr 1fr}.atelier-result{align-items:flex-start;flex-direction:column}.atelier-result>button{width:100%;justify-content:space-between}.atelier-intro h2{font-size:48px}}
 
-/* Mix & Match Studio — interactive outfit composer */
-.mix-studio{padding:96px 7%;background:#1b1c18;color:#f5f0e6}
-.mix-heading{max-width:760px;margin-bottom:42px}
-.mix-heading .eyebrow{color:#c5a977}
-.mix-heading h2{font:500 clamp(42px,5vw,66px)/1.02 'Playfair Display',serif;margin:16px 0}
-.mix-heading h2 em{color:#c5a977}
-.mix-heading>p:last-child{font-size:12px;line-height:1.9;color:#b7b2a6;max-width:420px}
-.mix-workspace{display:grid;grid-template-columns:.92fr 1.08fr;gap:28px;align-items:start}
-.mix-preview{position:sticky;top:24px;background:#252620;padding:18px;border:1px solid #ffffff20}
-.mix-preview-top,.mix-preview-bottom{display:flex;justify-content:space-between;gap:12px;align-items:center}
-.mix-preview-top{font-size:8px;letter-spacing:1.8px;color:#c5a977;padding-bottom:15px}
-.mix-preview-top span+span{color:#88877e}
-.mix-preview-images{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:210px 150px;gap:8px}
-.mix-main-image{grid-column:1/-1}
-.mix-preview-images>div{position:relative;overflow:hidden;background:#38382f}
-.mix-preview-images img{width:100%;height:100%;object-fit:cover;display:block}
-.mix-preview-images span{position:absolute;left:10px;bottom:10px;background:#191a16d9;color:#fff;padding:6px 8px;font-size:7px;letter-spacing:1.4px}
-.mix-preview-bottom{padding-top:18px}
-.mix-preview-bottom div{display:flex;flex-direction:column;gap:6px}
-.mix-preview-bottom small,.mix-add-row small{font-size:7px;letter-spacing:1.6px;color:#bda477}
-.mix-preview-bottom b{font:17px 'Playfair Display',serif}
-.mix-preview-bottom strong{font-size:17px}
-.mix-controls{border-top:1px solid #ffffff30}
-.mix-picker{padding:17px 0;border-bottom:1px solid #ffffff24}
-.mix-picker-title{display:flex;align-items:center;justify-content:space-between;font-size:8px;letter-spacing:1.5px;color:#c5a977;margin-bottom:12px}
-.mix-picker-title button{border:1px solid #ffffff40;color:#d2c9b8;background:transparent;padding:6px 8px;font-size:7px;letter-spacing:1px}
-.mix-options{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-.mix-options>button{display:flex;align-items:center;gap:9px;min-width:0;text-align:left;padding:7px;border:1px solid #ffffff25;background:#ffffff08;color:#f4f0e7}
-.mix-options>button.active{border-color:#c5a977;background:#c5a97716}
-.mix-options img{width:48px;height:56px;object-fit:cover;flex:none}
-.mix-options button>span{display:flex;flex-direction:column;gap:5px;min-width:0;flex:1}
-.mix-options b{font-size:9px;font-weight:500;line-height:1.4}
-.mix-options small{font-size:8px;color:#aaa69a}
-.mix-options svg{color:#c5a977;flex:none}
-.mix-add-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-top:20px}
-.mix-add-row>div{display:flex;flex-direction:column;gap:6px}
-.mix-add-row b{font:23px 'Playfair Display',serif}
-.mix-add-row>button{display:flex;align-items:center;gap:15px;border:0;background:#c5a977;color:#171713;padding:15px;font-size:8px;letter-spacing:1px}
-.mix-add-row>button:hover{background:#e0c99b}
-.mix-note{display:flex;align-items:center;gap:8px;justify-content:center;margin-top:25px;font-size:7px;letter-spacing:1.5px;color:#aaa69a}
-@media(max-width:850px){.mix-studio{padding:75px 5%}.mix-workspace{grid-template-columns:1fr}.mix-preview{position:relative;top:auto}.mix-preview-images{grid-template-rows:240px 160px}}
-@media(max-width:520px){.mix-studio{padding:60px 5%}.mix-options{grid-template-columns:1fr}.mix-preview{padding:12px}.mix-preview-images{grid-template-rows:210px 125px}.mix-add-row{align-items:stretch;flex-direction:column}.mix-add-row>button{justify-content:space-between}.mix-preview-bottom b{font-size:14px}.mix-preview-bottom strong{font-size:15px}}
-
-
 /* Budget-led collection controls */
 .price-filter-row{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:18px 0 10px;border-bottom:1px solid #e6e0d5}
 .price-filter-row>span{font-size:8px;letter-spacing:1.7px;color:#8c7958;white-space:nowrap}
@@ -179,3 +135,5 @@ button:disabled{cursor:not-allowed;opacity:.45}
 .track-order-link{display:inline-flex;align-items:center;gap:8px;margin:8px 0 16px;color:#8a7044;font-size:9px;letter-spacing:1px;text-decoration:none}
 .track-order-link svg{transform:rotate(180deg)}
 @media(max-width:520px){.track-page{padding:22px 5%}.track-card{margin:42px auto;padding:23px 18px}.track-form>div{flex-direction:column}.track-form button{min-height:46px}.track-result-head{align-items:flex-start;flex-direction:column}.track-status{align-self:flex-start}}
+
+.catalog-banner{margin:18px 0 8px;padding:12px 15px;border:1px solid #e7dfcf;background:#f5f1e8;color:#716044;font-size:9px;letter-spacing:1.15px;line-height:1.6}.quick-add:disabled{opacity:.45;cursor:not-allowed}.size-options button:disabled{opacity:.35;text-decoration:line-through;cursor:not-allowed}.product-image img{background:#eeeae2}

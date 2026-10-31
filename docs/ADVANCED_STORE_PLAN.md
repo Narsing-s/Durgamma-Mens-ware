@@ -13,7 +13,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 
 ## Highest-priority additions before launch
 
-1. **One catalogue source of truth** — replace the eight sample products and remote sample photos with products, images, prices and variants from Supabase. The storefront and checkout must read the same active catalogue. Do not let the customer add an unavailable size.
+1. **Catalogue operations** — the storefront now reads active products, prices, images and size/colour stock from Supabase when configured. Populate it with accurate store-owned product data and photography, add an owner-only product editor, and verify stock updates against checkout. The sample collection is preview-only and cannot be purchased.
 2. **Secure owner dashboard** — authenticated owner-only access with server-side role checks for product CRUD, image upload, SKU/size stock, order status and low-stock alerts. Never expose the Supabase service-role key in browser code.
 3. **Order lifecycle** — COD checkout now issues a private, high-entropy tracking token; only its SHA-256 hash is stored. Customers can follow order status and item summary at `/track` without creating an account. Apply `supabase/migrations/20261031_secure_order_tracking.sql` before deploying this feature. Owner updates for confirmed, packed, shipped, delivered and cancelled still need a secure admin workflow.
 4. **Delivery rules** — PIN-code serviceability, shipping charge rules, delivery estimate and return/exchange policy shown before payment.
@@ -27,7 +27,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 - Keep category, budget, search and sort as complementary filters; provide one **Clear all filters** action.
 - Keep one bag entry and one checkout action.
 - Keep size help in the product size selector, not as repeated size-guide links in every navigation area.
-- Keep outfit inspiration inside Style Finder / Outfit Builder; do not add another lookbook menu.
+- Keep Style Finder as the single guided-discovery tool; do not add another outfit-builder or lookbook menu.
 - Put owner-only operations in the admin dashboard, not in customer navigation.
 
 ## Release gates

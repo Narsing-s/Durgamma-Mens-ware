@@ -2,7 +2,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, X, ShieldCheck, LoaderCircle } from 'lucide-react';
 
-type CartLine={product:{id:number;name:string;price:number;image:string};size:string;quantity:number};
+type CartLine={product:{id:string;name:string;price:number;image:string};size:string;quantity:number;variantId?:string};
 type Variant={id:string;size:string;stock:number;colour:string};
 type CatalogProduct={id:string;name:string;price_inr:number;product_variants:Variant[]};
 type Props={items:CartLine[];onClose:()=>void;onSuccess:()=>void};
@@ -17,7 +17,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  const [name,setName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
  const [line1,setLine1]=useState(''),[city,setCity]=useState(''),[state,setState]=useState(''),[pincode,setPincode]=useState('');
  useEffect(()=>{let active=true;fetch('/api/catalog',{cache:'no-store'}).then(async r=>{if(!r.ok)throw new Error('The live product catalogue is unavailable.');return r.json();}).then(d=>{if(!active)return;if(!d.configured)throw new Error('Store database is not configured yet.');setCatalog(d.products||[]);setCatalogState('ready');}).catch(e=>{if(active){setError(e.message||'Could not load products.');setCatalogState('error');}});return()=>{active=false};},[]);
- const mapped=useMemo(()=>items.map(item=>{const product=catalog.find(p=>clean(p.name)===clean(item.product.name));const variants=(product?.product_variants||[]).filter(v=>v.size.toUpperCase()===item.size.toUpperCase()&&v.stock>=item.quantity);return {item,product,variant:variants[0]};}),[items,catalog]);
+ const mapped=useMemo(()=>items.map(item=>{const product=catalog.find(p=>item.variantId?p.product_variants.some(v=>v.id===item.variantId):clean(p.name)===clean(item.product.name));const variant=(product?.product_variants||[]).find(v=>(item.variantId?v.id===item.variantId:v.size.toUpperCase()===item.size.toUpperCase())&&v.size.toUpperCase()===item.size.toUpperCase()&&v.stock>=item.quantity);return {item,product,variant};}),[items,catalog]);
  const missing=mapped.filter(x=>!x.product||!x.variant);
  const subtotal=mapped.reduce((sum,x)=>sum+(x.product?.price_inr||0)*x.item.quantity,0);
  const shipping=subtotal>=1999?0:99;
