@@ -5,9 +5,11 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 ## Storefront experience
 
 - Responsive charcoal, ivory and muted-gold visual identity
-- Product search, category and budget filters, sorting and wishlist
+- Unified product search, category and budget filters, sorting and wishlist with one reset action
+- Responsive product cards with accessible quick-add controls
+- Cart quantity limits, clear shipping estimate and server-verified checkout totals
 - Persistent shopping bag with size selection and quantity controls
-- Style Finder, Mix & Match Studio and curated Capsule Lookbook
+- Style Finder and an interactive Mix & Match outfit builder with explicit size selection
 - Size guide and installable PWA manifest
 - Checkout with server-calculated order totals and Cash on Delivery flow
 
@@ -49,4 +51,4 @@ Import this repository into Vercel as a Next.js project. The GitHub Actions work
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
 - Add a secure, role-protected admin workflow before exposing product, inventory or order management to staff.
 
-The repository is a development storefront and must not be treated as production-ready until the launch checklist is complete.
+The repository is a development storefront. The storefront catalogue still contains sample products and must be replaced with the live Supabase catalogue before production. Newsletter capture, customer accounts, admin management and order tracking also require their backend services before being advertised as active features.
