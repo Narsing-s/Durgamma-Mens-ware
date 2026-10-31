@@ -5,7 +5,7 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 ## Storefront experience
 
 - Responsive charcoal, ivory and muted-gold visual identity
-- Unified product search, category and budget filters, sorting and wishlist with one reset action
+- Product discovery across name, category, description and tag, with category/budget filters, sorting, wishlist and one reset action
 - Responsive product cards with accessible quick-add controls
 - Cart quantity limits, clear shipping estimate and server-verified checkout totals
 - Persistent shopping bag with size selection and quantity controls
@@ -35,7 +35,7 @@ Open http://localhost:3000.
 4. Configure the Supabase URL, anon key and service-role key in local environment variables or Vercel project settings. Never expose the service-role key to the browser.
 5. Configure both Upstash Redis REST variables before enabling order creation; the server-side order route fails closed when rate limiting is unavailable.
 
-See [Production backend setup](docs/PRODUCTION_BACKEND.md) for the full launch checklist.
+See [Production backend setup](docs/PRODUCTION_BACKEND.md) and the [advanced storefront roadmap](docs/ADVANCED_STORE_PLAN.md) for launch requirements and the next feature phases.
 
 ## Deployment
 
