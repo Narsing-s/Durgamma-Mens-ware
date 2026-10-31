@@ -155,3 +155,5 @@ button:disabled{cursor:not-allowed;opacity:.45}
  .categories{gap:12px}
  .footer-bottom{gap:12px;flex-wrap:wrap;justify-content:center}
 }
+
+.catalog-banner{margin:18px 0 8px;padding:12px 15px;border:1px solid #e7dfcf;background:#f5f1e8;color:#716044;font-size:9px;letter-spacing:1.15px;line-height:1.6}.quick-add:disabled{opacity:.45;cursor:not-allowed}.size-options button:disabled{opacity:.35;text-decoration:line-through;cursor:not-allowed}.product-image img{background:#eeeae2}
