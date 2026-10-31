@@ -18,7 +18,7 @@ The shopping page still contains demo catalogue records and sample imagery. The 
 ## Supabase
 
 1. Create a Supabase project in a region suitable for Indian customers.
-2. Review and apply `supabase/schema.sql`. For an existing installation, review and apply the payment recovery migration under `supabase/migrations/`.
+2. Review and apply `supabase/schema.sql`. For an existing installation, apply the required migrations under `supabase/migrations/`, including `20261030_payment_recovery.sql` where needed and `20261031_secure_order_tracking.sql` for private order tracking.
 3. Add real products, images and size/colour variants through a trusted admin process.
 4. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
 5. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
@@ -45,7 +45,7 @@ Never commit real credentials or expose secret keys to browser code.
 
 ## Checkout and payment status
 
-Cash on Delivery is the default checkout method. The order endpoint validates customer and delivery details, applies rate limiting, calls the trusted database function, calculates the total from database prices and reserves stock atomically.
+Cash on Delivery is the default checkout method. The order endpoint validates customer and delivery details, applies rate limiting, calls the trusted database function, calculates the total from database prices and reserves stock atomically. On success, the server creates a 256-bit random tracking token, stores only its SHA-256 hash, and returns the token once as a private `/track` link. Tracking lookup returns order status and item summary only; it never returns customer email, phone or address. Apply the tracking migration and configure Upstash before relying on this feature.
 
 Razorpay server routes remain in the codebase, but the online option is disabled in the checkout UI by design. Do not enable it merely by adding credentials. Before activation:
 
@@ -64,6 +64,7 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
 - Add transactional email/SMS notifications and a secure order fulfilment process.
+- Build an owner-only fulfilment workflow to update pending, confirmed, packed, shipped, delivered and cancelled states; tracking reflects the database status but does not yet provide an admin status editor.
 - Implement admin access with verified authentication and server-side role checks before exposing product, stock or order management.
 - Configure backups, monitoring, access reviews and rate limits.
 - Run mobile, accessibility, inventory-race and end-to-end checkout tests before launch.

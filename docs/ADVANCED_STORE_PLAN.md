@@ -15,7 +15,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 
 1. **One catalogue source of truth** — replace the eight sample products and remote sample photos with products, images, prices and variants from Supabase. The storefront and checkout must read the same active catalogue. Do not let the customer add an unavailable size.
 2. **Secure owner dashboard** — authenticated owner-only access with server-side role checks for product CRUD, image upload, SKU/size stock, order status and low-stock alerts. Never expose the Supabase service-role key in browser code.
-3. **Order lifecycle** — durable order confirmation, customer order lookup using a secure unguessable tracking token, and owner updates for confirmed, packed, shipped, delivered and cancelled.
+3. **Order lifecycle** — COD checkout now issues a private, high-entropy tracking token; only its SHA-256 hash is stored. Customers can follow order status and item summary at `/track` without creating an account. Apply `supabase/migrations/20261031_secure_order_tracking.sql` before deploying this feature. Owner updates for confirmed, packed, shipped, delivered and cancelled still need a secure admin workflow.
 4. **Delivery rules** — PIN-code serviceability, shipping charge rules, delivery estimate and return/exchange policy shown before payment.
 5. **Notifications** — transactional email/SMS/WhatsApp notifications only after provider credentials, templates, consent and delivery-failure handling are configured.
 6. **Payment activation** — Razorpay test-mode end-to-end tests for success, failure, dismissal, cancellation, webhook signature, duplicate events, amount verification and stock release. Keep COD available as a separate payment method. Enable live mode only after sign-off.
@@ -32,4 +32,4 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 
 ## Release gates
 
-Do not advertise customer accounts, tracking, reviews, coupons, newsletter signup, admin management, delivery integration or online payment as active until the underlying service and end-to-end tests exist. Do not invent product ratings, stock counts, delivery dates or return promises.
+Do not advertise customer accounts, reviews, coupons, newsletter signup, admin management, delivery integration or online payment as active until the underlying service and end-to-end tests exist. Tracking is available only after the Supabase tracking migration is applied and the Upstash rate-limit integration is configured. Do not invent product ratings, stock counts, delivery dates or return promises.
