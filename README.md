@@ -5,11 +5,13 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 ## Storefront experience
 
 - Responsive charcoal, ivory and muted-gold visual identity
-- Product discovery across name, category, description and tag, with category/budget filters, sorting, wishlist and one reset action
+- Live product discovery from Supabase: product details, images, prices, sizes and available stock
+- Search, dynamic categories, budget filters, sorting and wishlist with one reset action
+- Demo catalogue shown only as a clearly labelled preview when Supabase is not configured
 - Responsive product cards with accessible quick-add controls
 - Cart quantity limits, clear shipping estimate and server-verified checkout totals
 - Persistent shopping bag with size selection and quantity controls
-- Style Finder and an interactive Mix & Match outfit builder with explicit size selection
+- One Style Finder for guided product discovery, with no duplicate outfit-builder navigation
 - Size guide and installable PWA manifest
 - Checkout with server-calculated order totals and Cash on Delivery flow
 
@@ -51,4 +53,4 @@ Import this repository into Vercel as a Next.js project. The GitHub Actions work
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
 - Add a secure, role-protected admin workflow before exposing product, inventory or order management to staff.
 
-The repository is a development storefront. The storefront catalogue still contains sample products and must be replaced with the live Supabase catalogue before production. Newsletter capture, customer accounts, admin management and order tracking also require their backend services before being advertised as active features.
+The repository is a development storefront. The storefront now uses the active Supabase catalogue when configured. The eight sample products are only a clearly labelled preview when Supabase is not configured; preview items cannot be added to the bag. Newsletter capture, customer accounts, admin management and order tracking also require their backend services before being advertised as active features.
