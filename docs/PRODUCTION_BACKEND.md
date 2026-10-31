@@ -2,7 +2,7 @@
 
 ## Current storefront state
 
-The storefront uses the Durgamma charcoal, ivory and muted-gold design system. It includes search, category and budget filters, sorting, wishlist, a persistent local shopping bag, size guide, Style Finder, Mix & Match Studio and Capsule Lookbook.
+The storefront uses the Durgamma charcoal, ivory and muted-gold design system. It includes search, category and budget filters, sorting, wishlist, a persistent local shopping bag, size guide, Style Finder and Mix & Match Studio. Product discovery supports category, budget, search and sort controls without repeating the same navigation actions.
 
 The shopping page still contains demo catalogue records and sample imagery. The checkout fetches the active Supabase catalogue and matches cart products and sizes to active database variants. Before accepting orders, replace demo content and ensure every displayed product and size has a matching active database record.
 
