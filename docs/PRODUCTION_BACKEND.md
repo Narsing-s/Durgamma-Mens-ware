@@ -1,37 +1,73 @@
-# Production backend setup
+# Production backend and launch setup
 
-The current website is a polished storefront prototype. Its catalogue is demo data and checkout is intentionally disabled.
+## Current storefront state
 
-## Planned production architecture
+The storefront uses the Durgamma charcoal, ivory and muted-gold design system. It includes search, category and budget filters, sorting, wishlist, a persistent local shopping bag, size guide, Style Finder, Mix & Match Studio and Capsule Lookbook.
 
-- Supabase Postgres: products, size/colour variants, stock, orders and order-item snapshots.
-- Server-only COD order API: validates customer/address/cart input, calculates prices from the database and reserves inventory in a database transaction.
-- Upstash Redis REST rate limiting is fail-closed: order creation remains unavailable until the Redis URL and token are configured. The current endpoint accepts COD only.
-- Razorpay server routes now create gateway orders, verify checkout signatures, and process signed idempotent webhook events. The customer-facing checkout UI, live credentials, catalog-to-variant mapping, and end-to-end tests remain launch requirements.
-- Cash on Delivery: create an order with cod_due payment status and a pending fulfilment status.
-- Vercel: host the Next.js storefront and server routes; store credentials only as encrypted environment variables.
+The shopping page still contains demo catalogue records and sample imagery. The checkout fetches the active Supabase catalogue and matches cart products and sizes to active database variants. Before accepting orders, replace demo content and ensure every displayed product and size has a matching active database record.
+
+## Architecture
+
+- Next.js App Router: storefront and server API routes.
+- Supabase Postgres: products, size/colour variants, stock, orders and immutable order-item snapshots.
+- Server-side order creation: database prices are authoritative; stock reservation is performed in a database transaction.
+- Upstash Redis REST: fail-closed rate limiting for order and payment creation.
+- Razorpay: server routes for gateway order creation, signature verification, cancellation and signed webhook handling are retained but customer-facing online payment is staged and disabled.
+- Vercel: host the storefront and server routes; store secrets only as encrypted environment variables.
 
 ## Supabase
 
 1. Create a Supabase project in a region suitable for Indian customers.
-2. Open SQL Editor and review/apply supabase/schema.sql. For an existing installation, also run supabase/migrations/20261030_payment_recovery.sql.
-3. Add products and their size/colour variants through a trusted admin workflow.
-4. Keep Row Level Security enabled. The schema exposes only active catalogue rows publicly. Orders and order items have no public read/write policies.
-5. The server-side COD endpoint calls the database function with the service role; it applies input validation and Upstash Redis rate limiting. Do not grant the function to anon or authenticated.
+2. Review and apply `supabase/schema.sql`. For an existing installation, review and apply the payment recovery migration under `supabase/migrations/`.
+3. Add real products, images and size/colour variants through a trusted admin process.
+4. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
+5. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
+6. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
 
 ## Environment variables
 
-Copy .env.example to .env.local for local development. Add production values in Vercel Project → Settings → Environment Variables. Set both Upstash Redis REST values before enabling order creation. Never place service-role or Razorpay secret keys in NEXT_PUBLIC_* variables, source files, GitHub commits or browser code.
+Copy `.env.example` to `.env.local` for local development. Configure the following in Vercel Project → Settings → Environment Variables:
 
-## Payment launch gate
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` (server only)
+- `NEXT_PUBLIC_SITE_URL`
+- `UPSTASH_REDIS_REST_URL`
+- `UPSTASH_REDIS_REST_TOKEN`
 
-The COD endpoint requires Supabase plus Upstash configuration. Razorpay server endpoints are scaffolded at /api/payments/razorpay/order, /api/payments/razorpay/verify and /api/webhooks/razorpay. The storefront still displays demo product data. Checkout matches those display names and sizes against active Supabase catalogue entries; add matching products and size variants before attempting a real order. Configure credentials only in Vercel environment variables, apply the SQL schema, connect the live catalog, and test success, failure, cancellation and duplicate webhook cases in Razorpay test mode before launch. COD also requires a trusted order API and operational order notifications.
+Razorpay variables are reserved for the later payment activation:
+
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
+
+Never commit real credentials or expose secret keys to browser code.
+
+## Checkout and payment status
+
+Cash on Delivery is the default checkout method. The order endpoint validates customer and delivery details, applies rate limiting, calls the trusted database function, calculates the total from database prices and reserves stock atomically.
+
+Razorpay server routes remain in the codebase, but the online option is disabled in the checkout UI by design. Do not enable it merely by adding credentials. Before activation:
+
+1. Configure Razorpay test credentials and webhook secret in Vercel.
+2. Confirm the live Supabase catalogue and variant stock are correct.
+3. Test order creation and server-calculated amount cross-checks.
+4. Test successful capture, failed payment, checkout dismissal, cancellation and inventory release.
+5. Verify webhook signatures and duplicate-event handling.
+6. Confirm the customer receives a durable order confirmation and support can reconcile payment/order states.
+7. Complete test-mode sign-off before switching to live credentials.
 
 ## Launch checklist
 
-- Replace demo products and remote sample imagery with owned product photography and accurate supplier details.
-- Validate all garment size charts, SKU/variant stock and final prices.
-- Configure shipping charges, serviceable pincodes, delivery estimates, cancellation and return/refund policy.
-- Add customer support contact details, privacy policy and terms of sale.
-- Configure Supabase backups, access roles, rate limits, monitoring and transactional email.
-- Test mobile checkout, accessibility, inventory races, order confirmation and refund flows before going live.
+- Replace demo products and remote sample imagery with owned photography and accurate descriptions.
+- Validate garment size charts and supplier-specific fit information.
+- Configure shipping charges, serviceable PIN codes and delivery estimates.
+- Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
+- Add transactional email/SMS notifications and a secure order fulfilment process.
+- Implement admin access with verified authentication and server-side role checks before exposing product, stock or order management.
+- Configure backups, monitoring, access reviews and rate limits.
+- Run mobile, accessibility, inventory-race and end-to-end checkout tests before launch.
+
+## Honest scope boundary
+
+The repository does not yet contain a production admin dashboard, customer sign-in/order-history experience, delivery-provider integration or transactional notification service. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
