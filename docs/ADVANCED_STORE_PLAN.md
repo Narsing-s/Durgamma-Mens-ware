@@ -6,7 +6,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 
 - Responsive product discovery with category, budget, text search and sort controls.
 - Search matches product name, category, description and merchandising tag.
-- Wishlist, persistent bag, size guide, Style Finder and Mix & Match outfit builder.
+- Wishlist, persistent bag, size guide and one guided-discovery tool: Style Finder. No duplicate outfit builder or lookbook.
 - Quantity controls, shipping threshold preview and server-calculated checkout totals.
 - Cash on Delivery checkout with database-backed variant and stock validation.
 - Razorpay server routes are staged but online payment remains disabled in the customer UI.
@@ -28,6 +28,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 - Keep one bag entry and one checkout action.
 - Keep size help in the product size selector, not as repeated size-guide links in every navigation area.
 - Keep Style Finder as the single guided-discovery tool; do not add another outfit-builder or lookbook menu.
+- Remove inactive promotional placeholders (such as a newsletter sign-up marked “coming soon”) until the underlying feature is actually connected.
 - Put owner-only operations in the admin dashboard, not in customer navigation.
 
 ## Release gates
