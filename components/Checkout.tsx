@@ -94,7 +94,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
        <label>ADDRESS<input required minLength={5} maxLength={160} value={line1} onChange={e=>setLine1(e.target.value)} autoComplete="street-address" placeholder="House / street / area"/></label>
        <label>CITY<input required value={city} onChange={e=>setCity(e.target.value)} autoComplete="address-level2"/></label>
        <label>STATE<input required value={state} onChange={e=>setState(e.target.value)} autoComplete="address-level1"/></label>
-       <label>PIN CODE<input required inputMode="numeric" pattern="[1-9][0-9]{5}" minLength={6} maxLength={6} value={pincode} onChange={e=>setPincode(e.target.value.replace(/\\D/g,'').slice(0,6))} autoComplete="postal-code"/></label>
+       <label>PIN CODE<input required inputMode="numeric" pattern="[1-9][0-9]{5}" minLength={6} maxLength={6} value={pincode} onChange={e=>setPincode(e.target.value.replace(/\D/g,'').slice(0,6))} autoComplete="postal-code"/></label>
       </div>
       <div className="payment-choice">
        <p>PAYMENT METHOD</p>
