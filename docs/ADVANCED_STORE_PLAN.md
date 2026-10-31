@@ -8,7 +8,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 - Search matches product name, category, description and merchandising tag.
 - Wishlist, persistent bag, size guide and one guided-discovery tool: Style Finder. No duplicate outfit builder or lookbook.
 - Quantity controls, shipping threshold preview and server-calculated checkout totals.
-- Cash on Delivery checkout with database-backed variant and stock validation.
+- One active checkout payment method: Cash on Delivery, with database-backed variant and stock validation. The inactive online-payment selector has been removed rather than shown as a disabled choice.
 - Razorpay server routes are staged but online payment remains disabled in the customer UI.
 
 ## Highest-priority additions before launch
@@ -26,6 +26,7 @@ This roadmap keeps the customer journey intentionally small: **Shop → Bag → 
 - Keep one primary Shop entry and one product grid.
 - Keep category, budget, search and sort as complementary filters; provide one **Clear all filters** action.
 - Keep one bag entry and one checkout action.
+- Show only the currently active payment method; do not render disabled or non-functional payment choices as selectable options.
 - Keep size help in the product size selector, not as repeated size-guide links in every navigation area.
 - Keep Style Finder as the single guided-discovery tool; do not add another outfit-builder or lookbook menu.
 - Remove inactive promotional placeholders (such as a newsletter sign-up marked “coming soon”) until the underlying feature is actually connected.
