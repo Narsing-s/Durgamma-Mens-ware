@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHash } from 'node:crypto';
+import { createHash, randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -113,7 +113,21 @@ export async function POST(request: NextRequest) {
     return json({ error: message }, 409);
   }
   const order = Array.isArray(data) ? data[0] : data;
-  if (!order?.order_number) return json({ error: 'Order confirmation could not be created.' }, 500);
+  if (!order?.order_number || !order?.order_id) return json({ error: 'Order confirmation could not be created.' }, 500);
+
+  // Give the customer a high-entropy tracking link. Only its SHA-256 hash is stored.
+  // The raw token is returned once and is never persisted in the database.
+  const trackingToken = randomBytes(32).toString('base64url');
+  const trackingHash = createHash('sha256').update(trackingToken).digest('hex');
+  const { error: trackingError } = await supabase
+    .from('orders')
+    .update({ tracking_token_hash: trackingHash })
+    .eq('id', order.order_id);
+  if (trackingError) {
+    // The order itself is already safely committed. Do not encourage a duplicate order
+    // by returning a failed checkout; simply omit tracking and surface the order number.
+    console.error('Order tracking token could not be saved for', order.order_number, trackingError.message);
+  }
 
   return json({
     ok: true,
@@ -122,6 +136,7 @@ export async function POST(request: NextRequest) {
     shipping: order.shipping_inr,
     total: order.total_inr,
     paymentMethod: 'cod',
+    trackingToken: trackingError ? null : trackingToken,
     message: 'Your Cash on Delivery order has been placed.',
   }, 201);
 }
