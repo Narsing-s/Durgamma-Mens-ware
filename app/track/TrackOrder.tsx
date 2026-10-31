@@ -14,6 +14,7 @@ type Order = {
 };
 
 const steps = [
+  { key: 'pending', label: 'Order received', note: 'Your order has been recorded.', icon: Clock3 },
   { key: 'confirmed', label: 'Confirmed', note: 'Your order has been accepted.', icon: CheckCircle2 },
   { key: 'packed', label: 'Packed', note: 'Your items are being prepared.', icon: Package },
   { key: 'shipped', label: 'Shipped', note: 'Your order is on its way.', icon: Truck },
