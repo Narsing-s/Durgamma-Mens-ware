@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   });
   const { data, error } = await supabase
     .from('orders')
-    .select('order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(product_name,size,quantity,line_total_inr)')
+    .select('order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at)')
     .eq('tracking_token_hash', tokenHash)
     .maybeSingle();
 
@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     deliveredAt: data.delivered_at,
+    returnRequest: (data.return_requests || []).sort((a: {created_at:string}, b: {created_at:string}) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())[0] || null,
     items: data.order_items || [],
   });
 }
