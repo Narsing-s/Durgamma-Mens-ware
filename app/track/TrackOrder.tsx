@@ -34,7 +34,7 @@ export default function TrackOrder() {
   const [returnType, setReturnType] = useState<'return'|'exchange'>('return');
   const [returnReason, setReturnReason] = useState('');
   const [returnNote, setReturnNote] = useState('');
-  const [returnBusy, setReturnBusy] = useState(false);
+  const [returnBusy, setReturnBusy] = useState(false);\n  const [returnSubmitted, setReturnSubmitted] = useState(false);
   const [returnMessage, setReturnMessage] = useState('');
 
   useEffect(() => {
@@ -83,7 +83,7 @@ export default function TrackOrder() {
     try {
       const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken, requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not submit your request.');
-      setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnReason(''); setReturnNote('');
+      setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnSubmitted(true); setReturnReason(''); setReturnNote('');
     } catch (err) { setReturnMessage(err instanceof Error ? err.message : 'Could not submit your request.'); } finally { setReturnBusy(false); }
   }
   function submit(event: FormEvent) {
@@ -123,7 +123,7 @@ export default function TrackOrder() {
         <div className="track-items"><h3>ORDER SUMMARY</h3>{order.items.map((item,index)=><div className="track-item" key={index}><span>{item.product_name}<small>Size {item.size} · Qty {item.quantity}</small></span><b>{money(item.line_total_inr)}</b></div>)}<div className="track-total"><span>Order total</span><b>{money(order.total)}</b></div><p className="track-payment">Payment status: {order.paymentStatus.replace('_',' ').toUpperCase()}</p></div>
         {order.status === "delivered" && <section className="track-return-panel">
           <h3>RETURN OR EXCHANGE</h3>
-          {order.deliveredAt && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? <>
+          {order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
             <p>Eligible orders can be returned or exchanged within 7 days of delivery. Your request will be reviewed by the store team.</p>
             <form onSubmit={submitReturn}>
               <label>REQUEST TYPE<select value={returnType} onChange={event => setReturnType(event.target.value as "return"|"exchange")}><option value="return">Return</option><option value="exchange">Exchange</option></select></label>
