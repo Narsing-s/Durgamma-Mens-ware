@@ -9,6 +9,9 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Search, dynamic categories, budget filters, sorting and wishlist with one reset action
 - Demo catalogue shown only as a clearly labelled preview when Supabase is not configured
 - Responsive product cards with accessible quick-add controls
+- Owner-only product image uploads and multiple size/colour variants
+- Secure customer return/exchange requests from private order tracking links
+- Admin return processing and enforced order fulfilment transitions
 - Cart quantity limits, clear shipping estimate and server-verified checkout totals
 - Persistent shopping bag with size selection and quantity controls
 - One Style Finder for guided product discovery, with no duplicate outfit-builder navigation
@@ -37,7 +40,7 @@ Open http://localhost:3000.
 4. Configure the Supabase URL, anon key and service-role key in local environment variables or Vercel project settings. Never expose the service-role key to the browser.
 5. Configure both Upstash Redis REST variables before enabling order creation; the server-side order route fails closed when rate limiting is unavailable.
 
-Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql) in Supabase before using tracking. See [Production backend setup](docs/PRODUCTION_BACKEND.md) and the [advanced storefront roadmap](docs/ADVANCED_STORE_PLAN.md) for launch requirements and the next feature phases.
+Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql), the real-store operations, inventory audit, PIN shipping, product media/returns and workflow hardening migrations in dependency order. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for full migration and launch requirements.
 
 ## Deployment
 

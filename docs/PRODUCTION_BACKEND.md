@@ -19,11 +19,12 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 
 1. Create a Supabase project in a region suitable for Indian customers.
 2. Review and apply `supabase/schema.sql`. For an existing installation, apply the required migrations under `supabase/migrations/`, including `20261030_payment_recovery.sql` where needed and `20261031_secure_order_tracking.sql` for private order tracking.
-3. Apply `20261101_real_store_operations.sql`, `20261101_inventory_audit.sql` and `20261101_pincode_shipping_enforcement.sql` after the base schema and secure tracking migration, in dependency order. Review existing migration history before reapplying functions.
-4. Add real products, images and size/colour variants through the owner-only admin dashboard.
-5. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
-6. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
-7. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
+3. Apply `20261101_real_store_operations.sql`, `20261101_inventory_audit.sql` and `20261101_pincode_shipping_enforcement.sql` after the base schema and secure tracking migration, in dependency order.
+4. Apply `20261102_product_media_and_returns.sql` and `20261102_store_workflow_hardening.sql` after the order and return foundation migrations. Review existing migration history before reapplying functions.
+5. Add real products, upload store-owned images, and create all size/colour variants through the owner-only admin dashboard.
+6. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
+7. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
+8. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
 
 ## Environment variables
 
@@ -66,11 +67,13 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
 - Add transactional email/SMS notifications and a secure order fulfilment process.
-- Use the owner-only admin dashboard to manage products, publish drafts, update stock with an audit trail, configure delivery PIN codes, and review orders and return requests.
+- Use the owner-only admin dashboard to manage products, upload photos, create size/colour variants, publish drafts, update stock with an audit trail, configure delivery PIN codes, and process return/exchange requests.
+- Customers can request a return or exchange from their private tracking link within 7 days of delivery. The database checks eligibility and prevents duplicate active requests.
+- Order status transitions are enforced as pending → confirmed → packed → shipped → delivered, with cancellation allowed before shipment.
 - Verify the `STORE_ADMIN_EMAILS` allow-list, owner login, order status transitions and inventory restoration using a non-production test order.
 - Configure backups, monitoring, access reviews and rate limits.
 - Run mobile, accessibility, inventory-race and end-to-end checkout tests before launch.
 
 ## Honest scope boundary
 
-The repository does not yet contain customer sign-in/order-history, carrier API integration, transactional notification delivery or live Razorpay checkout. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
+The repository does not yet contain customer sign-in/order-history, carrier API integration, transactional notification delivery or live Razorpay checkout. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.

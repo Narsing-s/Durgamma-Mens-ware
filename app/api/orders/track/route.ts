@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
   });
   const { data, error } = await supabase
     .from('orders')
-    .select('order_number,order_status,payment_status,total_inr,created_at,updated_at,order_items(product_name,size,quantity,line_total_inr)')
+    .select('order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(product_name,size,quantity,line_total_inr)')
     .eq('tracking_token_hash', tokenHash)
     .maybeSingle();
 
@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
     total: data.total_inr,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    deliveredAt: data.delivered_at,
     items: data.order_items || [],
   });
 }
