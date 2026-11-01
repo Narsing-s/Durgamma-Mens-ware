@@ -9,7 +9,7 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 ## Architecture
 
 - Next.js App Router: storefront and server API routes.
-- Supabase Postgres: products, size/colour variants, stock, orders and immutable order-item snapshots.
+- Supabase Postgres: products, size/colour variants, stock, orders, immutable order-item snapshots, delivery PIN rules and order status history.
 - Server-side order creation: database prices are authoritative; stock reservation is performed in a database transaction.
 - Upstash Redis REST: fail-closed rate limiting for order and payment creation.
 - Razorpay: server routes for gateway order creation, signature verification, cancellation and signed webhook handling are retained but customer-facing online payment is staged and disabled.
@@ -19,10 +19,10 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 
 1. Create a Supabase project in a region suitable for Indian customers.
 2. Review and apply `supabase/schema.sql`. For an existing installation, apply the required migrations under `supabase/migrations/`, including `20261030_payment_recovery.sql` where needed and `20261031_secure_order_tracking.sql` for private order tracking.
-3. Add real products, images and size/colour variants through a trusted admin process.
-4. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
-5. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
-6. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
+3. Apply the real-store operations migration, inventory audit migration and PIN-code shipping enforcement migration after the base schema and secure order tracking migration. Apply migrations in their documented dependency order.\n4. Add real products, images and size/colour variants through the owner-only admin dashboard.
+5. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
+6. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
+7. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
 
 ## Environment variables
 
@@ -31,7 +31,7 @@ Copy `.env.example` to `.env.local` for local development. Configure the followi
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
-- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SITE_URL`\n- `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; Supabase Auth users must already exist)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
@@ -45,7 +45,7 @@ Never commit real credentials or expose secret keys to browser code.
 
 ## Checkout and payment status
 
-Cash on Delivery is the default checkout method. The order endpoint validates customer and delivery details, applies rate limiting, calls the trusted database function, calculates the total from database prices and reserves stock atomically. On success, the server creates a 256-bit random tracking token, stores only its SHA-256 hash, and returns the token once as a private `/track` link. Tracking lookup returns order status and item summary only; it never returns customer email, phone or address. Apply the tracking migration and configure Upstash before relying on this feature.
+Cash on Delivery is the default checkout method. The order endpoint validates customer and delivery details, applies rate limiting, requires a serviceable PIN code, calls the trusted database function, calculates the total from database prices and reserves stock atomically. The checkout PIN checker is informational; the database independently enforces the rule at order creation. On success, the server creates a 256-bit random tracking token, stores only its SHA-256 hash, and returns the token once as a private `/track` link. Tracking lookup returns order status and item summary only; it never returns customer email, phone or address. Apply the tracking migration and configure Upstash before relying on this feature.
 
 Razorpay server routes remain in the codebase, but the online option is disabled in the checkout UI by design. Do not enable it merely by adding credentials. Before activation:
 
@@ -64,11 +64,11 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
 - Add transactional email/SMS notifications and a secure order fulfilment process.
-- Build an owner-only fulfilment workflow to update pending, confirmed, packed, shipped, delivered and cancelled states; tracking reflects the database status but does not yet provide an admin status editor.
+- Use the owner-only admin dashboard to manage products, inventory adjustments with audit history, delivery PIN rules, orders, and returns overview. Verify each operation against production-like data before launch.
 - Implement admin access with verified authentication and server-side role checks before exposing product, stock or order management.
 - Configure backups, monitoring, access reviews and rate limits.
 - Run mobile, accessibility, inventory-race and end-to-end checkout tests before launch.
 
 ## Honest scope boundary
 
-The repository does not yet contain a production admin dashboard, customer sign-in/order-history experience, delivery-provider integration or transactional notification service. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
+The repository does not yet contain customer sign-in/order-history, carrier API integration, transactional notification delivery or a live Razorpay checkout. The store owner must seed actual PIN codes, add real products and verify all operational workflows before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
