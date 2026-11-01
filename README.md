@@ -39,14 +39,14 @@ Open http://localhost:3000.
 1. Create a Supabase project.
 2. Review and apply `supabase/schema.sql` in the SQL editor.
 3. Add real products and active size/colour variants. Product names, variant sizes and stock must match the catalogue used at checkout.
-4. Configure the Supabase URL, anon key and service-role key in local environment variables or Vercel project settings. Never expose the service-role key to the browser.
+4. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and the server-only `SUPABASE_SERVICE_ROLE_KEY` in your hosting environment. Never expose the service-role key to the browser or commit credentials.
 5. Configure both Upstash Redis REST variables before enabling order creation; the server-side order route fails closed when rate limiting is unavailable.
 
 Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql), the real-store operations, inventory audit, PIN shipping, product media/returns and workflow hardening migrations in dependency order. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for full migration and launch requirements.
 
 ## Deployment
 
-Import this repository into Vercel as a Next.js project. The GitHub Actions workflow runs the production build on pushes and pull requests to the main branch.
+Deploy this Next.js application to a compatible Node.js host or a supported Next.js platform. The GitHub Actions workflow runs the production build on pushes and pull requests to the main branch. For Cloudflare, use the supported Next.js-on-Workers adapter rather than a static Pages export because this app uses API routes.
 
 ## Before accepting live orders
 
@@ -58,4 +58,4 @@ Import this repository into Vercel as a Next.js project. The GitHub Actions work
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
 - Configure the owner’s Supabase Auth account and exact `STORE_ADMIN_EMAILS` allow-list, then verify owner access to product, inventory and order management before launch.
 
-The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Upstash rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase authentication and the `STORE_ADMIN_EMAILS` allow-list. Customer accounts/order history, carrier integration, transactional notifications and online payments are not yet enabled.
+The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Upstash rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Customer accounts/order history, carrier integration, transactional notifications and online payments are not yet enabled.

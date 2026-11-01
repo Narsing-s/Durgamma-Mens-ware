@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient, getSupabaseBrowserConfigIssue } from '@/lib/supabase-browser';
 import Link from 'next/link';
 
 type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[] };
@@ -14,9 +15,8 @@ export default function AdminPage() {
   const [token, setToken] = useState('');
   const [data, setData] = useState<StoreData | null>(null);
   const [message, setMessage] = useState('');
-  const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    : null;
+  const supabase = getSupabaseBrowserClient();
+  const supabaseConfigIssue = getSupabaseBrowserConfigIssue();
 
   async function load(accessToken = token) {
     if (!accessToken) return;
@@ -40,7 +40,7 @@ export default function AdminPage() {
 
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
-    if (!supabase) { setMessage('Supabase authentication is not configured.'); return; }
+    if (!supabase) { setMessage(supabaseConfigIssue || 'Supabase authentication is not configured.'); return; }
     const { data: sessionData, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) { setMessage(error.message); return; }
     if (sessionData.session) {
@@ -110,7 +110,7 @@ export default function AdminPage() {
           <input aria-label="Password" type="password" placeholder="Password" value={password} onChange={event => setPassword(event.target.value)} required/>
           <button className="gold-btn">SIGN IN</button>
         </form>
-        {message && <p className="admin-message">{message}</p>}
+        {(message || supabaseConfigIssue) && <p className="admin-message" role="alert">{message || supabaseConfigIssue} {supabaseConfigIssue && 'Add the missing variables to your hosting environment and redeploy.'}</p>}
       </section>
     </main>;
   }
