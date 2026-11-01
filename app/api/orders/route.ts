@@ -8,27 +8,15 @@ export const dynamic = 'force-dynamic';
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
-async function enforceRateLimit(request: NextRequest): Promise<'ok' | 'limited' | 'unavailable'> {
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
-  if (!redisUrl || !redisToken) return 'unavailable';
-  const forwarded = request.headers.get('x-vercel-forwarded-for') || request.headers.get('x-forwarded-for') || 'unknown';
-  const ip = forwarded.split(',')[0].trim();
-  if (!ip || ip === 'unknown') return 'unavailable';
-  const key = 'durgamma:order-rate:' + createHash('sha256').update(ip).digest('hex').slice(0, 32);
-  try {
-    const response = await fetch(redisUrl.replace(/\/$/, '') + '/pipeline', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + redisToken, 'Content-Type': 'application/json' },
-      body: JSON.stringify([['INCR', key], ['EXPIRE', key, 60]]),
-      cache: 'no-store',
-    });
-    if (!response.ok) return 'unavailable';
-    const result = await response.json();
-    return Number(result?.[0]?.result) <= 5 ? 'ok' : 'limited';
-  } catch {
-    return 'unavailable';
-  }
+function getClientIp(request: NextRequest): string | null {
+  // Netlify is the live host; also support Vercel and Cloudflare deployments.
+  const value =
+    request.headers.get('x-nf-client-connection-ip') ||
+    request.headers.get('x-vercel-forwarded-for') ||
+    request.headers.get('cf-connecting-ip') ||
+    request.headers.get('x-forwarded-for');
+  const ip = value?.split(',')[0]?.trim();
+  return ip && ip !== 'unknown' ? ip : null;
 }
 
 function validText(value: unknown, min: number, max: number): value is string {
@@ -48,9 +36,20 @@ export async function POST(request: NextRequest) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return json({ error: 'Order service is not configured yet.' }, 503);
 
-  const rateLimit = await enforceRateLimit(request);
-  if (rateLimit === 'limited') return json({ error: 'Too many order attempts. Please try again in a minute.' }, 429);
-  if (rateLimit === 'unavailable') return json({ error: 'Order protection is not configured. Please try again later.' }, 503);
+  const supabase = createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const clientIp = getClientIp(request);
+  if (!clientIp) return json({ error: 'We could not verify this connection. Please refresh and try again.' }, 503);
+  const ipHash = createHash('sha256').update(clientIp).digest('hex');
+  const { data: attempts, error: rateLimitError } = await supabase.rpc('consume_order_rate_limit', {
+    p_ip_hash: ipHash,
+  });
+  if (rateLimitError || typeof attempts !== 'number') {
+    console.error('Order rate-limit check failed:', rateLimitError?.message || 'Invalid rate-limit response');
+    return json({ error: 'Order protection is temporarily unavailable. Please try again later.' }, 503);
+  }
+  if (attempts > 5) return json({ error: 'Too many order attempts. Please try again in a minute.' }, 429);
 
   let body: Record<string, unknown>;
   try {
@@ -94,9 +93,6 @@ export async function POST(request: NextRequest) {
     items.push({ variant_id: item.variantId, quantity: Number(item.quantity) });
   }
 
-  const supabase = createClient(url, serviceKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
   const { data, error } = await supabase.rpc('create_store_order', {
     p_customer_name: body.customerName.trim(),
     p_email: body.email.trim().toLowerCase(),
