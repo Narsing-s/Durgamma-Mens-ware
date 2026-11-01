@@ -18,7 +18,7 @@ export function adminClient(request: NextRequest) {
 
 export async function requireAdmin(request: NextRequest) {
   const clients = adminClient(request);
-  if ('error' in clients) return clients;
+  if ('error' in clients) return { error: clients.error };
   const { data, error } = await clients.auth.auth.getUser();
   if (error || !data.user?.email) return { error: adminJson({ error: 'Your session is invalid.' }, 401) };
   const allowed = (process.env.STORE_ADMIN_EMAILS || '').split(',').map(x => x.trim().toLowerCase()).filter(Boolean);
