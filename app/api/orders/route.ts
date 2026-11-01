@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
+import { sendStoreEmail, escapeEmailHtml } from '../../../../lib/order-email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -125,6 +126,30 @@ export async function POST(request: NextRequest) {
     console.error('Order tracking token could not be saved for', order.order_number, trackingError.message);
   }
 
+  const { error: confirmationError } = await supabase.rpc('set_store_order_status', {
+    p_order_id: order.order_id,
+    p_status: 'confirmed',
+    p_note: 'Automatically confirmed when the customer completed Cash on Delivery checkout.',
+  });
+  if (confirmationError) console.error('Could not confirm order', order.order_number, confirmationError.message);
+
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\\/$/, '');
+  const trackingUrl = trackingError ? null : siteUrl + '/track?token=' + encodeURIComponent(trackingToken);
+  const statusLabel = confirmationError ? 'Order received' : 'Confirmed';
+  const emailResult = trackingUrl ? await sendStoreEmail({
+    to: body.email.trim().toLowerCase(),
+    subject: 'Order ' + order.order_number + ' ' + statusLabel.toLowerCase() + ' | Durgamma Menswear',
+    text: [
+      'Hello ' + body.customerName.trim() + ',',
+      'Your Durgamma Menswear Cash on Delivery order ' + order.order_number + ' has been ' + statusLabel.toLowerCase() + '.',
+      'Order total: INR ' + Number(order.total_inr).toLocaleString('en-IN') + '. Pay when your order arrives.',
+      'Track your order: ' + trackingUrl,
+      'You can also track with your order number and checkout email at ' + siteUrl + '/track.',
+      'Thank you for shopping with Durgamma Menswear.',
+    ].join('\\n'),
+    html: '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Your order is ' + statusLabel.toLowerCase() + '.</h1><p>Hello ' + escapeEmailHtml(body.customerName.trim()) + ',</p><p>Your Cash on Delivery order <strong>' + escapeEmailHtml(order.order_number) + '</strong> has been ' + statusLabel.toLowerCase() + '.</p><p>Order total: <strong>INR ' + Number(order.total_inr).toLocaleString('en-IN') + '</strong>. Pay when your order arrives.</p><p><a href="' + trackingUrl + '" style="display:inline-block;padding:12px 18px;background:#b99a62;color:#fff;text-decoration:none">Track your order</a></p><p>Or visit ' + escapeEmailHtml(siteUrl) + '/track and enter your order number with this checkout email.</p><p>Thank you for shopping with Durgamma Menswear.</p></div>',
+  }) : { sent: false, reason: 'tracking_unavailable' };
+
   return json({
     ok: true,
     orderNumber: order.order_number,
@@ -132,7 +157,10 @@ export async function POST(request: NextRequest) {
     shipping: order.shipping_inr,
     total: order.total_inr,
     paymentMethod: 'cod',
+    status: confirmationError ? 'pending' : 'confirmed',
     trackingToken: trackingError ? null : trackingToken,
+    trackingUrl,
+    emailSent: emailResult.sent,
     message: 'Your Cash on Delivery order has been placed.',
   }, 201);
 }
