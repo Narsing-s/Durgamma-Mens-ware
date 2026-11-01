@@ -10,6 +10,7 @@ type Order = {
   total: number;
   createdAt: string;
   updatedAt: string;
+  deliveredAt?: string | null;
   items: { product_name: string; size: string; quantity: number; line_total_inr: number }[];
 };
 
@@ -30,6 +31,11 @@ export default function TrackOrder() {
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [returnType, setReturnType] = useState<'return'|'exchange'>('return');
+  const [returnReason, setReturnReason] = useState('');
+  const [returnNote, setReturnNote] = useState('');
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [returnMessage, setReturnMessage] = useState('');
 
   useEffect(() => {
     const supplied = new URLSearchParams(window.location.search).get('token');
@@ -68,6 +74,18 @@ export default function TrackOrder() {
     }
   }
 
+  async function submitReturn(event: FormEvent) {
+    event.preventDefault(); setReturnMessage('');
+    let suppliedToken = token.trim();
+    try { if (suppliedToken.startsWith('http://') || suppliedToken.startsWith('https://')) suppliedToken = new URL(suppliedToken).searchParams.get('token') || ''; } catch { suppliedToken = ''; }
+    if (!suppliedToken || returnReason.trim().length < 5) { setReturnMessage('Enter a reason with at least 5 characters.'); return; }
+    setReturnBusy(true);
+    try {
+      const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken, requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
+      const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not submit your request.');
+      setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnReason(''); setReturnNote('');
+    } catch (err) { setReturnMessage(err instanceof Error ? err.message : 'Could not submit your request.'); } finally { setReturnBusy(false); }
+  }
   function submit(event: FormEvent) {
     event.preventDefault();
     void lookup();
@@ -103,6 +121,19 @@ export default function TrackOrder() {
           })}
         </div>}
         <div className="track-items"><h3>ORDER SUMMARY</h3>{order.items.map((item,index)=><div className="track-item" key={index}><span>{item.product_name}<small>Size {item.size} · Qty {item.quantity}</small></span><b>{money(item.line_total_inr)}</b></div>)}<div className="track-total"><span>Order total</span><b>{money(order.total)}</b></div><p className="track-payment">Payment status: {order.paymentStatus.replace('_',' ').toUpperCase()}</p></div>
+        {order.status === "delivered" && <section className="track-return-panel">
+          <h3>RETURN OR EXCHANGE</h3>
+          {order.deliveredAt && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? <>
+            <p>Eligible orders can be returned or exchanged within 7 days of delivery. Your request will be reviewed by the store team.</p>
+            <form onSubmit={submitReturn}>
+              <label>REQUEST TYPE<select value={returnType} onChange={event => setReturnType(event.target.value as "return"|"exchange")}><option value="return">Return</option><option value="exchange">Exchange</option></select></label>
+              <label>REASON<textarea value={returnReason} onChange={event => setReturnReason(event.target.value)} minLength={5} maxLength={500} required placeholder="Tell us why you need a return or exchange"/></label>
+              <label>ADDITIONAL NOTE (OPTIONAL)<textarea value={returnNote} onChange={event => setReturnNote(event.target.value)} maxLength={500} placeholder="Preferred size for exchange, if applicable"/></label>
+              <button disabled={returnBusy}>{returnBusy ? "SUBMITTING…" : "SUBMIT REQUEST"}</button>
+            </form>
+          </> : <p>The 7-day return/exchange period has ended or the delivery date is not available. Please contact the store for assistance.</p>}
+          {returnMessage && <p className="track-return-message" role="status">{returnMessage}</p>}
+        </section>}
         <p className="track-updated">Last updated {date(order.updatedAt)}</p>
       </section>}
     </section>
