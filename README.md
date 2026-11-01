@@ -59,3 +59,16 @@ Deploy this Next.js application to a compatible Node.js host or a supported Next
 - Configure the owner’s Supabase Auth account and exact `STORE_ADMIN_EMAILS` allow-list, then verify owner access to product, inventory and order management before launch.
 
 The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Upstash rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Customer accounts/order history, carrier integration, transactional notifications and online payments are not yet enabled.
+
+## Customer accounts
+
+The storefront includes a customer account page at `/account` with email/password sign-up, sign-in, password reset, and sign-out. It uses the existing Supabase browser client and does not require a separate customer-password table.
+
+Before enabling customer accounts in production:
+
+1. In Supabase Dashboard → Authentication → URL Configuration, set the Site URL to `https://durgamma-mens-ware.vercel.app`.
+2. Add `https://durgamma-mens-ware.vercel.app/account` to the Redirect URLs allowlist. For local development, also add `http://localhost:3000/account`.
+3. In Vercel, ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured for the deployment.
+4. Configure Supabase email templates and SMTP delivery if you want reliable production confirmation and password-reset emails.
+
+Customer sign-up may require email confirmation depending on the Supabase Auth settings. The existing `STORE_ADMIN_EMAILS` allowlist remains separate: creating a customer account does not grant store-admin access.
