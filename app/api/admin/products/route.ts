@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { adminJson, requireAdmin } from '../../../../../lib/admin';
+import { adminJson, requireAdmin } from '../../../../lib/admin';
 
 export async function POST(request: NextRequest) {
  const auth=await requireAdmin(request); if('error' in auth)return auth.error;
