@@ -8,12 +8,12 @@ export const dynamic = 'force-dynamic';
 const json = (body: unknown, status = 200) =>
   NextResponse.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
 
-async function rateLimit(request: NextRequest): Promise<boolean> {
+async function rateLimit(request: NextRequest): Promise<'ok' | 'limited' | 'unavailable'> {
   const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
   const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
   const ip = (request.headers.get('x-vercel-forwarded-for') ||
     request.headers.get('x-forwarded-for') || '').split(',')[0].trim();
-  if (!redisUrl || !redisToken || !ip) return false;
+  if (!redisUrl || !redisToken || !ip) return 'unavailable';
   const key = 'durgamma:return-rate:' + createHash('sha256').update(ip).digest('hex').slice(0, 32);
   try {
     const response = await fetch(redisUrl.replace(/\/$/, '') + '/pipeline', {
@@ -22,9 +22,9 @@ async function rateLimit(request: NextRequest): Promise<boolean> {
       body: JSON.stringify([['INCR', key], ['EXPIRE', key, 3600]]),
       cache: 'no-store',
     });
-    if (!response.ok) return false;
+    if (!response.ok) return 'unavailable';
     const result = await response.json();
-    return Number(result?.[0]?.result) <= 5;
+    return Number(result?.[0]?.result) <= 5 ? 'ok' : 'limited';
   } catch {
     return false;
   }
