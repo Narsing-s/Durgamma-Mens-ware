@@ -4,7 +4,7 @@
 
 The storefront uses the Durgamma charcoal, ivory and muted-gold design system. When Supabase is configured, the shop page reads active products, prices, descriptions, image URLs and active size/colour variants from `/api/catalog`. Search, dynamic categories, budget filters, sorting and wishlist are kept together in one shop section. The separate static outfit builder was removed; Style Finder remains the single guided-discovery tool.
 
-When Supabase is not configured, the shop displays a clearly labelled sample preview with selectable sample sizes and a working local preview bag. Preview data cannot be submitted as a real order; checkout remains locked until Supabase catalogue, stock, delivery rules and order services are configured. With Supabase configured, only active database products appear; quick-add is enabled only for sizes with stock. The bag stores the exact database variant ID, and checkout revalidates that same variant and quantity against live inventory. Keep the catalogue populated with accurate, store-owned photography and product data.
+When Supabase is not configured, the shop displays a clearly labelled sample preview with selectable sample sizes and a working local preview bag. Preview data cannot be submitted as a real order; checkout remains locked until Supabase catalogue, stock, delivery rules and order services are configured. With Supabase configured, only active database products appear; customers can select available size/colour combinations, and quick-add is enabled only for in-stock variants. The bag stores the exact database variant ID, and checkout revalidates that same variant and quantity against live inventory. Keep the catalogue populated with accurate, store-owned photography and product data.
 
 ## Architecture
 
