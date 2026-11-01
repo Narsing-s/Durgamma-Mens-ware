@@ -12,6 +12,7 @@ export async function PATCH(request: NextRequest,{params}:{params:Promise<{id:st
  if(b.compare_at_price_inr!==undefined){const n=b.compare_at_price_inr===null||b.compare_at_price_inr===''?null:Number(b.compare_at_price_inr);if(n!==null&&(!Number.isInteger(n)||n<0||n>10000000))return adminJson({error:'Invalid MRP.'},400);update.compare_at_price_inr=n;}
  if(b.image_url!==undefined){if(b.image_url!==null&&b.image_url!==''&&!/^https:\/\//i.test(b.image_url))return adminJson({error:'Image URL must use HTTPS.'},400);update.image_url=b.image_url||null;}
  if(b.is_active!==undefined){if(typeof b.is_active!=='boolean')return adminJson({error:'Product visibility must be true or false.'},400);update.is_active=b.is_active;}
+ if(b.is_active===true){const {error:variantError}=await auth.db.from('product_variants').update({is_active:true}).eq('product_id',id).gt('stock',0);if(variantError)return adminJson({error:'Product could not be published because its in-stock sizes could not be enabled.'},409);}
  if(!Object.keys(update).length)return adminJson({error:'No valid product changes provided.'},400);
  const {data:current,error:readError}=await auth.db.from('products').select('price_inr,compare_at_price_inr').eq('id',id).maybeSingle();
  if(readError)return adminJson({error:'Could not verify the current product details.'},500);
