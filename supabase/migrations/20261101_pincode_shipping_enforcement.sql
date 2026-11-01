@@ -26,7 +26,7 @@ begin
   if v_qty not between 1 and 10 then raise exception 'Invalid item quantity'; end if;
   select * into v_variant from public.product_variants where id=(v_item->>'variant_id')::uuid and is_active=true for update;
   if not found then raise exception 'A selected size is unavailable'; end if;
-  if v_variant.stock<v_qty then raise exception 'Insufficient stock for SKU %',v_variant.sku; end if;
+  if v_variant.stock<v_qty then raise exception 'Insufficient stock for SKU %',v_variant.sku; end if;\n  update public.product_variants set stock=stock-v_qty where id=v_variant.id;
   select * into v_product from public.products where id=v_variant.product_id and is_active=true;
   if not found then raise exception 'A selected product is unavailable'; end if;
   v_line:=v_product.price_inr*v_qty; v_subtotal:=v_subtotal+v_line;
