@@ -29,10 +29,16 @@ export async function POST(request: NextRequest) {
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !serviceKey) return adminJson({ error: 'Image storage is not configured.' }, 503);
 
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const isJpeg = file.type === 'image/jpeg' && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+  const isPng = file.type === 'image/png' && bytes.length >= 8 && [0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a].every((value, index) => bytes[index] === value);
+  const isWebp = file.type === 'image/webp' && bytes.length >= 12 && String.fromCharCode(...bytes.slice(0,4)) === 'RIFF' && String.fromCharCode(...bytes.slice(8,12)) === 'WEBP';
+  if (!isJpeg && !isPng && !isWebp) return adminJson({ error: 'The file contents do not match a supported image format.' }, 415);
+
   const objectPath = 'products/' + randomUUID() + '.' + extension;
   const { data, error } = await auth.db.storage
     .from('product-images')
-    .upload(objectPath, new Uint8Array(await file.arrayBuffer()), {
+    .upload(objectPath, bytes, {
       contentType: file.type,
       cacheControl: '31536000',
       upsert: false,
