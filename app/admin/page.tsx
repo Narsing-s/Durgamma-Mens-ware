@@ -9,6 +9,7 @@ type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any
 
 export default function AdminPage() {
   const [adjustments, setAdjustments] = useState<Record<string, string>>({});
+  const [deliveryCodes, setDeliveryCodes] = useState<Record<string, string>>({});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -80,7 +81,7 @@ export default function AdminPage() {
       body: JSON.stringify({ status }),
     });
     const result = await response.json();
-    setMessage(response.ok ? 'Order updated successfully.' : result.error || 'Update failed.');
+    setMessage(response.ok ? (result.emailWarning || (result.emailSent === false ? 'Order updated, but notification email was not sent.' : 'Order updated successfully.')) : result.error || 'Update failed.');
     if (response.ok) load();
   }
 
@@ -102,16 +103,42 @@ export default function AdminPage() {
     }
   }
 
-  async function updateReturn(id: string, status: string) {
+  async function updateReturn(id: string, status: string, orderTotal?: number) {
     const note = prompt('Optional note for the customer') || '';
+    let refundReference: string | undefined;
+    let refundMethod: string | undefined;
+    let refundAmount: number | undefined;
+    if (status === 'refunded') {
+      refundReference = prompt('Enter the actual UPI/bank transfer reference (required):') || '';
+      if (refundReference.trim().length < 4) { setMessage('Refund not recorded. Complete the actual transfer and enter its reference.'); return; }
+      refundMethod = prompt('Refund method: upi, bank_transfer, cash, or original_payment_method', 'upi') || '';
+      refundAmount = Number(prompt('Actual refund amount in INR:', String(orderTotal || '')) || 0);
+      if (!['upi','bank_transfer','cash','original_payment_method'].includes(refundMethod) || !Number.isInteger(refundAmount) || refundAmount < 1 || (orderTotal && refundAmount > orderTotal)) { setMessage('Enter a valid refund method and amount.'); return; }
+    }
     const response = await fetch('/api/admin/returns/' + id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ status, note }),
+      body: JSON.stringify({ status, note, refundReference, refundMethod, refundAmount }),
     });
     const result = await response.json();
-    setMessage(response.ok ? 'Return request updated.' : result.error || 'Return update failed.');
+    setMessage(response.ok ? (result.emailWarning || (result.emailSent === false ? 'Return updated, but customer email was not sent.' : 'Return request updated.')) : result.error || 'Return update failed.');
     if (response.ok) load();
+  }
+
+
+  async function deliveryAction(id: string, action: 'resend' | 'verify') {
+    const otp = deliveryCodes[id] || '';
+    const response = await fetch('/api/admin/orders/' + id + '/delivery', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify(action === 'resend' ? { action } : { action, otp }),
+    });
+    const result = await response.json();
+    setMessage(response.ok ? (result.warning || (result.emailSent === false ? 'Delivery updated, but customer email was not sent.' : action === 'verify' ? 'Delivery verified and marked delivered.' : 'A new delivery OTP was sent.')) : result.error || 'Delivery verification failed.');
+    if (response.ok) {
+      setDeliveryCodes(current => ({ ...current, [id]: '' }));
+      load();
+    }
   }
 
   async function signOut() {
@@ -194,14 +221,15 @@ export default function AdminPage() {
             const nextStatuses = order.order_status === 'pending' ? ['confirmed', 'cancelled']
               : order.order_status === 'confirmed' ? ['packed', 'cancelled']
               : order.order_status === 'packed' ? ['shipped', 'cancelled']
-              : order.order_status === 'shipped' ? ['delivered'] : [];
+              : order.order_status === 'shipped' ? [] : [];
             return <div className="admin-row" key={order.id}>
-              <span><b>{order.order_number}</b><small>{order.customer_name}</small></span>
+              <span><b>{order.order_number}</b><small>{order.customer_name} · {order.email}</small></span>
               <span>₹{Number(order.total_inr).toLocaleString('en-IN')}</span>
               <select value={order.order_status} disabled={!nextStatuses.length} onChange={event => updateOrder(order.id, event.target.value)}>
                 <option value={order.order_status}>{order.order_status[0].toUpperCase() + order.order_status.slice(1)}</option>
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
+              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
             </div>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
@@ -210,6 +238,7 @@ export default function AdminPage() {
 
       <section className="admin-section" id="returns">
         <h2>Returns &amp; exchanges</h2>
+        <p>Customer requests must be made within 7 days of delivery. Items must be unused, unwashed, unaltered and undamaged, with original tags and packaging. Approve only after eligibility review; mark received after inspection. For a refund, complete the actual transfer first, then record its reference, method and amount. This dashboard records the refund; it does not transfer money automatically.</p>
         <div className="admin-table">
           {data.returns.length ? data.returns.map((item: any) => <div className="admin-row" key={item.id}>
             <span>
@@ -224,7 +253,7 @@ export default function AdminPage() {
               </>}
               {item.status === 'approved' && <button onClick={() => updateReturn(item.id, 'received')}>Mark received</button>}
               {item.status === 'received' && <>
-                <button onClick={() => updateReturn(item.id, 'refunded')}>Record manual refund</button>
+                <button onClick={() => updateReturn(item.id, 'refunded', Number(item.orders?.total_inr || 0))}>Record manual refund</button>
                 <button onClick={() => updateReturn(item.id, 'exchanged')}>Record exchange completed</button>
               </>}
             </span>
