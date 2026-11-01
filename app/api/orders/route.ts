@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
   });
   if (confirmationError) console.error('Could not confirm order', order.order_number, confirmationError.message);
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
   const trackingUrl = trackingError ? null : siteUrl + '/track?token=' + encodeURIComponent(trackingToken);
   const statusLabel = confirmationError ? 'Order received' : 'Confirmed';
   const emailResult = trackingUrl ? await sendStoreEmail({
