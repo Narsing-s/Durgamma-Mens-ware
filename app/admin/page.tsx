@@ -229,7 +229,7 @@ export default function AdminPage() {
                 <option value={order.order_status}>{order.order_status[0].toUpperCase() + order.order_status.slice(1)}</option>
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
-              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
+              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
             </div>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
