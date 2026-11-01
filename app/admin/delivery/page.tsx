@@ -1,11 +1,12 @@
 'use client';
 import {useEffect,useState} from 'react';
-import {createClient,User} from '@supabase/supabase-js';
+import {User} from '@supabase/supabase-js';
+import {getSupabaseBrowserClient} from '@/lib/supabase-browser';
 import Link from 'next/link';
 export default function DeliveryAdmin(){
  const [user,setUser]=useState<User|null>(null),[token,setToken]=useState(''),[rules,setRules]=useState<any[]>([]),[msg,setMsg]=useState('');
  const [form,setForm]=useState({pincode:'',shipping_inr:'99',is_serviceable:true,min_delivery_days:'3',max_delivery_days:'7'});
- const supabase=process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?createClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY):null;
+ const supabase=getSupabaseBrowserClient();
  async function load(t=token){if(!t)return;const r=await fetch('/api/admin/delivery',{headers:{Authorization:'Bearer '+t}});const j=await r.json();if(r.ok)setRules(j.rules||[]);else setMsg(j.error||'Unable to load delivery rules.');}
  useEffect(()=>{supabase?.auth.getSession().then(({data})=>{if(data.session){setUser(data.session.user);setToken(data.session.access_token);load(data.session.access_token);}});},[]);
  async function save(e:React.FormEvent){e.preventDefault();const r=await fetch('/api/admin/delivery',{method:'PUT',headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},body:JSON.stringify({...form,shipping_inr:Number(form.shipping_inr),min_delivery_days:Number(form.min_delivery_days),max_delivery_days:Number(form.max_delivery_days)})});const j=await r.json();setMsg(r.ok?'PIN-code delivery rule saved.':j.error||'Save failed.');if(r.ok)load();}
