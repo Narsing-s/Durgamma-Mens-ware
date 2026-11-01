@@ -15,6 +15,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState(''),[trackingUrl,setTrackingUrl]=useState('');
  const [name,setName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
  const [line1,setLine1]=useState(''),[city,setCity]=useState(''),[state,setState]=useState(''),[pincode,setPincode]=useState('');
+ const [delivery,setDelivery]=useState<{serviceable:boolean;minDays?:number|null;maxDays?:number|null}|null>(null),[checkingPin,setCheckingPin]=useState(false);
 
  useEffect(()=>{
   let active=true;
@@ -40,10 +41,19 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  const subtotal=mapped.reduce((sum,x)=>sum+(x.product?.price_inr||0)*x.item.quantity,0);
  const shipping=subtotal>=1999?0:99;
 
+ async function checkDelivery(){
+  if(!/^[1-9][0-9]{5}$/.test(pincode)){setError('Enter a valid 6-digit PIN code first.');return;}
+  setCheckingPin(true);setDelivery(null);
+  try{const r=await fetch('/api/delivery/check?pincode='+encodeURIComponent(pincode),{cache:'no-store'});const d=await r.json();if(!r.ok)throw new Error(d.error||'Delivery check is unavailable.');setDelivery(d);setError(d.serviceable?'':'Delivery is not available for this PIN code.');}
+  catch(e){setError(e instanceof Error?e.message:'Delivery check failed.');}
+  finally{setCheckingPin(false);}
+ }
+
  async function submit(e:FormEvent){
   e.preventDefault();setError('');setSuccess('');
   if(catalogState!=='ready'){setError('The live catalogue is not ready. Please try again shortly.');return;}
   if(missing.length){setError('Some items or selected sizes are not available in the live store inventory. Please refresh your bag and try again.');return;}
+  if(!delivery?.serviceable){setError('Check delivery availability for your PIN code before placing the order.');return;}
   setBusy(true);
   try{
    const body={
@@ -94,14 +104,14 @@ export default function Checkout({items,onClose,onSuccess}:Props){
        <label>ADDRESS<input required minLength={5} maxLength={160} value={line1} onChange={e=>setLine1(e.target.value)} autoComplete="street-address" placeholder="House / street / area"/></label>
        <label>CITY<input required value={city} onChange={e=>setCity(e.target.value)} autoComplete="address-level2"/></label>
        <label>STATE<input required value={state} onChange={e=>setState(e.target.value)} autoComplete="address-level1"/></label>
-       <label>PIN CODE<input required inputMode="numeric" pattern="[1-9][0-9]{5}" minLength={6} maxLength={6} value={pincode} onChange={e=>setPincode(e.target.value.replace(/\D/g,'').slice(0,6))} autoComplete="postal-code"/></label>
+       <label>PIN CODE<input required inputMode="numeric" pattern="[1-9][0-9]{5}" minLength={6} maxLength={6} value={pincode} onChange={e=>{setPincode(e.target.value.replace(/\D/g,'').slice(0,6));setDelivery(null);}} autoComplete="postal-code"/><button type="button" className="pin-check-btn" onClick={checkDelivery} disabled={checkingPin||pincode.length!==6}>{checkingPin?'CHECKING…':'CHECK DELIVERY'}</button>{delivery&&<small>{delivery.serviceable?'Delivery available'+(delivery.minDays!=null?' · '+delivery.minDays+'–'+(delivery.maxDays??delivery.minDays)+' days':''):'Delivery unavailable for this PIN code'}</small>}</label>
       </div>
       <div className="payment-choice">
        <p>PAYMENT METHOD</p>
        <label><input type="radio" checked readOnly/> Cash on Delivery <small>Pay when your order arrives.</small></label>
       </div>
       {error&&<p className="checkout-error" role="alert">{error}</p>}
-      <button className="gold-btn checkout-submit" disabled={busy||catalogState!=='ready'||missing.length>0}>
+      <button className="gold-btn checkout-submit" disabled={busy||catalogState!=='ready'||missing.length>0||!delivery?.serviceable}>
        {busy?<><LoaderCircle size={16}/> PROCESSING…</>:'PLACE COD ORDER'}
       </button>
       <small className="checkout-secure"><ShieldCheck size={13}/> Your order total and stock are verified securely before confirmation.</small>
