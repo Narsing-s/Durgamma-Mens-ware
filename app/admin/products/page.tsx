@@ -73,16 +73,76 @@ export default function AdminProductsPage() {
     setEditValues(current => ({ ...current, [product.id]: { ...editValue(product), [field]: value } }));
   }
 
+  async function compressProductImage(original: File): Promise<File> {
+    const TARGET_BYTES = 3.2 * 1024 * 1024;
+    const MAX_SOURCE_BYTES = 25 * 1024 * 1024;
+    if (original.size > MAX_SOURCE_BYTES) {
+      throw new Error('This photo is over 25 MB. Please choose a smaller original image.');
+    }
+
+    let bitmap: ImageBitmap;
+    try {
+      bitmap = await createImageBitmap(original);
+    } catch {
+      throw new Error('This image could not be opened. Please choose a JPG, PNG or WebP photo.');
+    }
+
+    try {
+      const maxDimension = 1800;
+      let scale = Math.min(1, maxDimension / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+      if (!context) throw new Error('Your browser could not prepare this image.');
+
+      for (let attempt = 0; attempt < 7; attempt += 1) {
+        canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+        canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+        context.clearRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+        const quality = Math.max(0.48, 0.84 - attempt * 0.07);
+        const blob = await new Promise<Blob | null>(resolve => {
+          canvas.toBlob(resolve, 'image/webp', quality);
+        });
+        if (!blob) throw new Error('Image compression failed. Please try another photo.');
+
+        if (blob.size <= TARGET_BYTES) {
+          const isWebp = blob.type === 'image/webp';
+          const finalBlob = isWebp ? blob : await new Promise<Blob | null>(resolve => {
+            canvas.toBlob(resolve, 'image/jpeg', quality);
+          });
+          if (!finalBlob) throw new Error('Image compression failed. Please try another photo.');
+          const extension = finalBlob.type === 'image/webp' ? 'webp' : 'jpg';
+          return new File([finalBlob], original.name.replace(/\\.[^.]+$/, '') + '.' + extension, {
+            type: finalBlob.type,
+            lastModified: Date.now(),
+          });
+        }
+        scale *= 0.82;
+      }
+      throw new Error('This photo is still too large after compression. Please choose a smaller image.');
+    } finally {
+      bitmap.close();
+    }
+  }
+
   async function uploadImage(file: File): Promise<string> {
+    const preparedFile = await compressProductImage(file);
     const uploadData = new FormData();
-    uploadData.append('file', file);
+    uploadData.append('file', preparedFile);
     const response = await fetch('/api/admin/products/image', {
       method: 'POST',
       headers: { Authorization: 'Bearer ' + token },
       body: uploadData,
     });
-    const result = await response.json();
-    if (!response.ok) throw new Error(result.error || 'Product image upload failed.');
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      if (response.status === 413) {
+        throw new Error('The upload service rejected this image as too large. Choose a smaller photo and try again.');
+      }
+      throw new Error(result?.error || 'Product image upload failed. Please try again.');
+    }
+    if (!result?.imageUrl) throw new Error('The upload service did not return an image URL. Please try again.');
     return result.imageUrl;
   }
 
@@ -169,7 +229,7 @@ export default function AdminProductsPage() {
         <input type="number" min="0" max="10000000" placeholder="MRP / original price (₹)" value={form.mrp} onChange={e => setForm(v => ({ ...v, mrp: e.target.value }))}/>
         <input placeholder="URL slug (optional)" value={form.slug} onChange={e => setForm(v => ({ ...v, slug: e.target.value }))}/>
         <input type="url" placeholder="Or paste an HTTPS image URL" value={form.image_url} onChange={e => { setForm(v => ({ ...v, image_url: e.target.value })); setImageFile(null); }}/>
-        <label>Upload product photo (JPG, PNG or WebP, max 5 MB)
+        <label>Upload product photo (JPG, PNG or WebP; large photos are automatically compressed)
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFile(e.target.files?.[0] || null)}/>
         </label>
         {imageFile && <div className="admin-image-preview"><img src={imagePreview} alt="Selected product preview"/><span>Selected: {imageFile.name}</span></div>}
