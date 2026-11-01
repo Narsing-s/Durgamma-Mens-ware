@@ -4,7 +4,7 @@ import { ArrowLeft, X, ShieldCheck, LoaderCircle } from 'lucide-react';
 
 declare global {
   interface Window {
-    Razorpay?: new (options: Record<string, unknown>) => { open: () => void };
+    Razorpay?: new (options: Record<string, unknown>) => { open: () => void; on: (event: string, callback: (response: any) => void) => void };
   }
 }
 
@@ -86,6 +86,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
 
  async function submit(e:FormEvent){
   e.preventDefault();setError('');setSuccess('');
+  let pendingRazorpayOrderId: string | null = null;
   if(catalogState!=='ready'){setError('The live catalogue is not ready. Please try again shortly.');return;}
   if(missing.length){setError('Some items or selected sizes are not available in the live store inventory. Please refresh your bag and try again.');return;}
   if(!delivery?.serviceable){setError('Check delivery availability for your PIN code before placing the order.');return;}
@@ -106,6 +107,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
    const response=await fetch('/api/payments/razorpay/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
    const data=await response.json();
    if(!response.ok)throw new Error(data.error||'Online payment is not configured. Choose Cash on Delivery or contact the store.');
+   pendingRazorpayOrderId = data.razorpayOrderId;
    if(!Number.isInteger(data.total)||!Number.isInteger(data.amount)||data.amount!==data.total*100||data.currency!=='INR')throw new Error('The payment amount could not be verified. Please contact the store before retrying.');
    const loaded=await loadRazorpay();
    if(!loaded||!window.Razorpay)throw new Error('Razorpay checkout is unavailable. Please retry or choose Cash on Delivery.');
@@ -124,14 +126,18 @@ export default function Checkout({items,onClose,onSuccess}:Props){
        const verified=await fetch('/api/payments/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payment)});
        const result=await verified.json();
        if(!verified.ok)throw new Error(result.error||'Payment verification failed. Contact support before retrying.');
-       finished=true;setSuccess('Payment received and verified. Order '+(result.orderNumber||data.orderNumber)+' is confirmed. Total paid: '+money(data.total)+'.');
+       finished=true;pendingRazorpayOrderId=null;setSuccess('Payment received and verified. Order '+(result.orderNumber||data.orderNumber)+' is confirmed. Total paid: '+money(data.total)+'.');
        resolve();
       }catch(err){finished=true;reject(err instanceof Error?err:new Error('Payment verification is pending. Please contact support with order '+data.orderNumber+'.'));}
      }
     });
+    gateway.on('payment.failed', (failure: any) => { void fail(failure?.error?.description || 'Payment failed. You can retry or choose Cash on Delivery.'); });
     gateway.open();
    });
   }catch(err){
+   if (pendingRazorpayOrderId) {
+    try { await fetch('/api/payments/razorpay/cancel', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ razorpayOrderId: pendingRazorpayOrderId }) }); } catch {}
+   }
    setError(err instanceof Error?err.message:'Checkout failed. Please try again.');
   }finally{setBusy(false);}
  }
