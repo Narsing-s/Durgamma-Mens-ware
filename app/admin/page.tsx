@@ -243,7 +243,7 @@ export default function AdminPage() {
           {data.returns.length ? data.returns.map((item: any) => <div className="admin-row" key={item.id}>
             <span>
               <b>{item.orders?.order_number || 'Order'} · {(item.request_type || 'return').toUpperCase()}</b>
-              <small>{item.reason} · {item.orders?.customer_name || 'Customer'} · {new Date(item.created_at).toLocaleDateString('en-IN')}</small>
+              <small>{item.order_items?.product_name ? item.order_items.product_name + ' · Size ' + item.order_items.size + ' · Qty ' + item.order_items.quantity + ' · ' : ''}{item.reason} · {item.orders?.customer_name || 'Customer'} · {new Date(item.created_at).toLocaleDateString('en-IN')}</small>
             </span>
             <span>
               <b>{item.status.toUpperCase()}</b>
@@ -253,7 +253,7 @@ export default function AdminPage() {
               </>}
               {item.status === 'approved' && <button onClick={() => updateReturn(item.id, 'received')}>Mark received</button>}
               {item.status === 'received' && <>
-                <button onClick={() => updateReturn(item.id, 'refunded', Number(item.orders?.total_inr || 0))}>Record manual refund</button>
+                <button onClick={() => updateReturn(item.id, 'refunded', Number(item.order_items?.line_total_inr || item.orders?.total_inr || 0))}>Record manual refund</button>
                 <button onClick={() => updateReturn(item.id, 'exchanged')}>Record exchange completed</button>
               </>}
             </span>
