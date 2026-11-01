@@ -29,7 +29,10 @@ begin
   if v_variant.stock<v_qty then raise exception 'Insufficient stock for SKU %',v_variant.sku; end if;
   select * into v_product from public.products where id=v_variant.product_id and is_active=true;
   if not found then raise exception 'A selected product is unavailable'; end if;
-  -- Reserve immediately while holding the row lock. This also handles repeated cart lines\n  -- for the same variant without allowing the same stock to be sold twice.\n  update public.product_variants set stock=stock-v_qty where id=v_variant.id;\n  v_line:=v_product.price_inr*v_qty; v_subtotal:=v_subtotal+v_line;
+  -- Reserve immediately while holding the row lock. This also handles repeated cart lines
+  -- for the same variant without allowing the same stock to be sold twice.
+  update public.product_variants set stock=stock-v_qty where id=v_variant.id;
+  v_line:=v_product.price_inr*v_qty; v_subtotal:=v_subtotal+v_line;
   v_lines:=v_lines||jsonb_build_array(jsonb_build_object('product_id',v_product.id,'variant_id',v_variant.id,'product_name',v_product.name,'sku',v_variant.sku,'size',v_variant.size,'colour',v_variant.colour,'unit_price_inr',v_product.price_inr,'quantity',v_qty,'line_total_inr',v_line));
  end loop;
  insert into public.orders(id,order_number,customer_name,email,phone,shipping_address,payment_method,payment_status,subtotal_inr,shipping_inr,total_inr)
@@ -38,8 +41,6 @@ begin
  insert into public.order_items(order_id,product_id,variant_id,product_name,sku,size,colour,unit_price_inr,quantity,line_total_inr)
  select v_order_id,(item->>'product_id')::uuid,(item->>'variant_id')::uuid,item->>'product_name',item->>'sku',item->>'size',item->>'colour',(item->>'unit_price_inr')::integer,(item->>'quantity')::integer,(item->>'line_total_inr')::integer
  from jsonb_array_elements(v_lines) as line(item);
- update public.product_variants as variants set stock=variants.stock-(items->>'quantity')::integer
- from jsonb_array_elements(p_items) as items where variants.id=(items->>'variant_id')::uuid;
  return query select v_order_id,v_order_number,v_subtotal,v_shipping,v_subtotal+v_shipping;
 end; $$;
 revoke all on function public.create_store_order(text,text,text,jsonb,text,jsonb) from public;
