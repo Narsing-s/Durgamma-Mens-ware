@@ -56,6 +56,6 @@ Import this repository into Vercel as a Next.js project. The GitHub Actions work
 - Configure transactional order notifications and operational order fulfilment.
 - Run the full build and checkout tests with production-like data.
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
-- Add a secure, role-protected admin workflow before exposing product, inventory or order management to staff.
+- Configure the owner’s Supabase Auth account and exact `STORE_ADMIN_EMAILS` allow-list, then verify owner access to product, inventory and order management before launch.
 
 The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Upstash rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase authentication and the `STORE_ADMIN_EMAILS` allow-list. Customer accounts/order history, carrier integration, transactional notifications and online payments are not yet enabled.
