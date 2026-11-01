@@ -11,6 +11,7 @@ type Order = {
   createdAt: string;
   updatedAt: string;
   deliveredAt?: string | null;
+  returnRequest?: { id: string; status: string; request_type: string; created_at: string } | null;
   items: { product_name: string; size: string; quantity: number; line_total_inr: number }[];
 };
 
@@ -124,7 +125,7 @@ export default function TrackOrder() {
         <div className="track-items"><h3>ORDER SUMMARY</h3>{order.items.map((item,index)=><div className="track-item" key={index}><span>{item.product_name}<small>Size {item.size} · Qty {item.quantity}</small></span><b>{money(item.line_total_inr)}</b></div>)}<div className="track-total"><span>Order total</span><b>{money(order.total)}</b></div><p className="track-payment">Payment status: {order.paymentStatus.replace('_',' ').toUpperCase()}</p></div>
         {order.status === "delivered" && <section className="track-return-panel">
           <h3>RETURN OR EXCHANGE</h3>
-          {order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
+          {order.returnRequest && order.returnRequest.status !== "rejected" ? <p>Existing {order.returnRequest.request_type} request: <b>{order.returnRequest.status.toUpperCase()}</b>. The store team will update this request as it is processed.</p> : order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
             <p>Eligible orders can be returned or exchanged within 7 days of delivery. Your request will be reviewed by the store team.</p>
             <form onSubmit={submitReturn}>
               <label>REQUEST TYPE<select value={returnType} onChange={event => setReturnType(event.target.value as "return"|"exchange")}><option value="return">Return</option><option value="exchange">Exchange</option></select></label>
