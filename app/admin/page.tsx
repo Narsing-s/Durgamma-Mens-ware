@@ -117,6 +117,9 @@ export default function AdminPage() {
 
   const orderValue = (data?.orders || []).filter(order => order.order_status !== 'cancelled')
     .reduce((total, order) => total + Number(order.total_inr || 0), 0);
+  const completedOrders = (data?.orders || []).filter(order => order.order_status === 'delivered').length;
+  const pendingOrders = (data?.orders || []).filter(order => ['pending','confirmed','packed'].includes(order.order_status)).length;
+  const cancelledOrders = (data?.orders || []).filter(order => order.order_status === 'cancelled').length;
 
   return <main className="admin-shell">
     <header className="admin-header">
@@ -138,11 +141,27 @@ export default function AdminPage() {
 
       <section className="admin-section">
         <h2>Store management</h2>
-        <p><Link href="/admin/products">Manage products, upload photos, edit details and manage size/colour variants →</Link></p>
-        <p><Link href="/admin/delivery">Manage serviceable PIN codes, shipping charges and delivery ranges →</Link></p>
+        <div className="admin-quick-links">
+          <Link href="/admin/products">Products &amp; photos <span>Add products, upload/replace photos, edit selling price and MRP, sizes and stock →</span></Link>
+          <Link href="/admin/delivery">Delivery settings <span>Serviceable PIN codes, shipping charges and delivery ranges →</span></Link>
+          <a href="#orders">Orders &amp; fulfilment <span>Confirm, pack, ship, deliver or cancel orders →</span></a>
+          <a href="#inventory">Inventory <span>Review low stock and record stock adjustments →</span></a>
+          <a href="#returns">Returns &amp; exchanges <span>Approve, reject and record return outcomes →</span></a>
+          <a href="#reports">Store reports <span>Review sales totals and order status summary →</span></a>
+        </div>
+      </section>
+      <section className="admin-section" id="reports">
+        <h2>Store reports</h2>
+        <div className="admin-stats">
+          <div><span>Delivered orders (loaded)</span><b>{completedOrders}</b></div>
+          <div><span>Active orders (loaded)</span><b>{pendingOrders}</b></div>
+          <div><span>Cancelled orders (loaded)</span><b>{cancelledOrders}</b></div>
+          <div><span>Products in catalogue</span><b>{data.products.length}</b></div>
+        </div>
+        <small>Revenue shown above is the sum of non-cancelled orders in the latest 100 records returned by the dashboard, not an all-time accounting ledger.</small>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="orders">
         <h2>Orders</h2>
         <div className="admin-table">
           {data.orders.map(order => {
@@ -163,7 +182,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="returns">
         <h2>Returns &amp; exchanges</h2>
         <div className="admin-table">
           {data.returns.length ? data.returns.map((item: any) => <div className="admin-row" key={item.id}>
@@ -187,7 +206,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="inventory">
         <h2>Low-stock inventory</h2>
         <div className="admin-table">
           {data.lowStock.length ? data.lowStock.map((variant: any) => <div className="admin-row" key={variant.id}>
@@ -200,7 +219,7 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section className="admin-section">
+      <section className="admin-section" id="products">
         <h2>Products</h2>
         <div className="admin-table">
           {data.products.map(product => <div className="admin-row" key={product.id}>
