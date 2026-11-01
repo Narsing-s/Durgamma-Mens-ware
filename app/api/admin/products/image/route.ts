@@ -5,7 +5,7 @@ import { adminJson, requireAdmin } from '../../../../../lib/admin';
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_IMAGE_BYTES = 3.5 * 1024 * 1024;
 const EXTENSIONS: Record<string, string> = {
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
   const extension = EXTENSIONS[file.type];
   if (!extension) return adminJson({ error: 'Use a JPG, PNG or WebP image.' }, 415);
   if (file.size < 1 || file.size > MAX_IMAGE_BYTES) {
-    return adminJson({ error: 'Product images must be smaller than 5 MB.' }, 413);
+    return adminJson({ error: 'Product image upload must be smaller than 3.5 MB after compression.' }, 413);
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
