@@ -15,7 +15,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState(''),[trackingUrl,setTrackingUrl]=useState('');
  const [name,setName]=useState(''),[email,setEmail]=useState(''),[phone,setPhone]=useState('');
  const [line1,setLine1]=useState(''),[city,setCity]=useState(''),[state,setState]=useState(''),[pincode,setPincode]=useState('');
- const [delivery,setDelivery]=useState<{serviceable:boolean;minDays?:number|null;maxDays?:number|null}|null>(null),[checkingPin,setCheckingPin]=useState(false);
+ const [delivery,setDelivery]=useState<{serviceable:boolean;shipping?:number;minDays?:number|null;maxDays?:number|null}|null>(null),[checkingPin,setCheckingPin]=useState(false);
 
  useEffect(()=>{
   let active=true;
@@ -39,7 +39,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
  }),[items,catalog]);
  const missing=mapped.filter(x=>!x.product||!x.variant);
  const subtotal=mapped.reduce((sum,x)=>sum+(x.product?.price_inr||0)*x.item.quantity,0);
- const shipping=subtotal>=1999?0:99;
+ const shipping=delivery?.shipping??(subtotal>=1999?0:99);
 
  async function checkDelivery(){
   if(!/^[1-9][0-9]{5}$/.test(pincode)){setError('Enter a valid 6-digit PIN code first.');return;}
