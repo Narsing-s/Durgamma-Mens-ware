@@ -12,7 +12,23 @@ export async function GET(request: NextRequest) {
     auth.db.from('return_requests').select('id,status,request_type,reason,customer_note,admin_note,created_at,orders(order_number,customer_name)').order('created_at', { ascending: false }).limit(50),
     auth.db.from('product_variants').select('id,product_id,sku,size,colour,stock,products(name)').lte('stock', 5).order('stock', { ascending: true }).limit(100),
   ]);
-  const failure = [products.error, orders.error, returns.error, lowStock.error].find(Boolean);
-  if (failure) return adminJson({ error: 'Could not load store operations.' }, 500);
+  const failures = [
+    { table: 'products', error: products.error },
+    { table: 'orders', error: orders.error },
+    { table: 'return_requests', error: returns.error },
+    { table: 'product_variants', error: lowStock.error },
+  ].filter(item => Boolean(item.error));
+  if (failures.length) {
+    for (const failure of failures) {
+      if (failure.error) console.error('[admin/store] Database query failed:', {
+        table: failure.table,
+        code: failure.error.code,
+        message: failure.error.message,
+      });
+    }
+    return adminJson({
+      error: `Could not load store operations. Database query failed for: ${failures.map(item => item.table).join(', ')}. Check the database schema and deployment logs.`,
+    }, 500);
+  }
   return adminJson({ products: products.data || [], orders: orders.data || [], returns: returns.data || [], lowStock: lowStock.data || [] });
 }

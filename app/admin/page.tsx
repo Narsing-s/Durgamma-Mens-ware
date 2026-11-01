@@ -14,17 +14,40 @@ export default function AdminPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState('');
   const [data, setData] = useState<StoreData | null>(null);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const supabase = getSupabaseBrowserClient();
   const supabaseConfigIssue = getSupabaseBrowserConfigIssue();
 
   async function load(accessToken = token) {
-    if (!accessToken) return;
-    const response = await fetch('/api/admin/store', { headers: { Authorization: 'Bearer ' + accessToken } });
-    const result = await response.json();
-    if (!response.ok) { setMessage(result.error || 'Could not load dashboard.'); return; }
-    setData(result);
+    if (!accessToken) {
+      setMessage('Your sign-in session is missing. Please sign out and sign in again.');
+      return;
+    }
+    setLoading(true);
     setMessage('');
+    try {
+      const response = await fetch('/api/admin/store', {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Accept: 'application/json', Authorization: 'Bearer ' + accessToken },
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        setMessage(result.error || `Could not load store operations (HTTP ${response.status}).`);
+        return;
+      }
+      if (!result || !Array.isArray(result.products) || !Array.isArray(result.orders) || !Array.isArray(result.returns) || !Array.isArray(result.lowStock)) {
+        setMessage('The store service returned incomplete data. Please retry or check the deployment logs.');
+        return;
+      }
+      setData(result);
+    } catch (error) {
+      console.error('Store dashboard load failed:', error);
+      setMessage('Unable to reach the store service. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -131,7 +154,10 @@ export default function AdminPage() {
       <div><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
     </header>
     {message && <p className="admin-message" role="status">{message}</p>}
-    {!data ? <p>Loading store operations…</p> : <>
+    {loading && <p role="status">Loading store operations…</p>}
+    {!data && !loading && message && <section className="admin-section" role="alert"><p>{message}</p><button onClick={() => load()}>Try again</button></section>}
+    {!data && !loading && !message && <p>Store operations are ready to load. <button onClick={() => load()}>Load dashboard</button></p>}
+    {data && <>
       <section className="admin-stats">
         <div><span>Orders</span><b>{data.orders.length}</b></div>
         <div><span>Order value</span><b>₹{orderValue.toLocaleString('en-IN')}</b></div>
