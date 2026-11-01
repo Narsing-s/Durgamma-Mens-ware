@@ -19,7 +19,8 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 
 1. Create a Supabase project in a region suitable for Indian customers.
 2. Review and apply `supabase/schema.sql`. For an existing installation, apply the required migrations under `supabase/migrations/`, including `20261030_payment_recovery.sql` where needed and `20261031_secure_order_tracking.sql` for private order tracking.
-3. Apply `20261101_real_store_operations.sql`, `20261101_inventory_audit.sql` and `20261101_pincode_shipping_enforcement.sql` after the base schema and secure tracking migration, in dependency order. Review existing migration history before reapplying functions.\n4. Add real products, images and size/colour variants through the owner-only admin dashboard.
+3. Apply `20261101_real_store_operations.sql`, `20261101_inventory_audit.sql` and `20261101_pincode_shipping_enforcement.sql` after the base schema and secure tracking migration, in dependency order. Review existing migration history before reapplying functions.
+4. Add real products, images and size/colour variants through the owner-only admin dashboard.
 5. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
 6. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
 7. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
@@ -31,7 +32,8 @@ Copy `.env.example` to `.env.local` for local development. Configure the followi
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
-- `NEXT_PUBLIC_SITE_URL`\n- `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
+- `NEXT_PUBLIC_SITE_URL`
+- `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
