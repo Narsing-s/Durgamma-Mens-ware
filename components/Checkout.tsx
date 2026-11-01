@@ -2,7 +2,7 @@
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { ArrowLeft, X, ShieldCheck, LoaderCircle } from 'lucide-react';
 
-type CartLine={product:{id:string;name:string;price:number;image:string};size:string;quantity:number;variantId?:string};
+type CartLine={product:{id:string;name:string;price:number;image:string};size:string;colour?:string;quantity:number;variantId?:string};
 type Variant={id:string;size:string;stock:number;colour:string};
 type CatalogProduct={id:string;name:string;price_inr:number;product_variants:Variant[]};
 type Props={items:CartLine[];onClose:()=>void;onSuccess:()=>void};
@@ -119,8 +119,8 @@ export default function Checkout({items,onClose,onSuccess}:Props){
     </div>
     <aside className="checkout-summary">
      <h3>YOUR ORDER</h3>
-     {items.map(i=><div className="checkout-line" key={i.product.id+'-'+i.size}>
-      <span>{i.product.name}<small>Size {i.size} · Qty {i.quantity}</small></span>
+     {items.map(i=><div className="checkout-line" key={i.variantId||i.product.id+'-'+i.size+'-'+(i.colour||'Default')}>
+      <span>{i.product.name}<small>Size {i.size} · Colour {i.colour||'Default'} · Qty {i.quantity}</small></span>
       <b>{money((catalog.find(p=>clean(p.name)===clean(i.product.name))?.price_inr||i.product.price)*i.quantity)}</b>
      </div>)}
      <div className="checkout-line"><span>Subtotal</span><b>{money(subtotal)}</b></div>
