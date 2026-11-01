@@ -35,9 +35,11 @@ export async function POST(request: NextRequest) {
   const requestType = body.requestType;
   const reason = typeof body.reason === 'string' ? body.reason.trim() : '';
   const customerNote = typeof body.customerNote === 'string' ? body.customerNote.trim() : '';
+  const orderItemId = typeof body.orderItemId === 'string' ? body.orderItemId : '';
 
   if ((!/^[A-Za-z0-9_-]{40,60}$/.test(token) &&
        (!/^DMW-[A-Z0-9]{10}$/.test(orderNumber) || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(orderItemId) ||
       (requestType !== 'return' && requestType !== 'exchange') ||
       reason.length < 5 || reason.length > 500 || customerNote.length > 500) {
     return json({ error: 'Verify your order and provide a valid return or exchange reason.' }, 400);
@@ -89,6 +91,7 @@ export async function POST(request: NextRequest) {
     p_request_type: requestType,
     p_reason: reason,
     p_customer_note: customerNote,
+    p_order_item_id: orderItemId,
   });
   if (error) {
     const message = /delivered|7-day|already active|tracking link/i.test(error.message)
