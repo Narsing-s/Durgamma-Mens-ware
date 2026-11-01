@@ -26,7 +26,7 @@ async function rateLimit(request: NextRequest): Promise<'ok' | 'limited' | 'unav
     const result = await response.json();
     return Number(result?.[0]?.result) <= 5 ? 'ok' : 'limited';
   } catch {
-    return false;
+    return 'unavailable';
   }
 }
 
@@ -36,9 +36,9 @@ export async function POST(request: NextRequest) {
   if (origin && siteUrl && new URL(origin).origin !== new URL(siteUrl).origin) {
     return json({ error: 'Invalid request origin.' }, 403);
   }
-  if (!await rateLimit(request)) {
-    return json({ error: 'Return request protection is unavailable or the request limit was reached. Try again later.' }, 503);
-  }
+  const limit = await rateLimit(request);
+  if (limit === 'limited') return json({ error: 'Too many return requests. Please try again later.' }, 429);
+  if (limit === 'unavailable') return json({ error: 'Return request protection is not configured. Please try again later.' }, 503);
 
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
