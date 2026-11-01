@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createHash, randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
-import { sendStoreEmail, escapeEmailHtml } from '../../../../lib/order-email';
+import { sendStoreEmail, escapeEmailHtml } from '../../../lib/order-email';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
