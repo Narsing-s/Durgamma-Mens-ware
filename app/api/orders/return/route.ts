@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     p_ip_hash: createHash('sha256').update(ip).digest('hex'),
   });
   if (rateError || typeof attempts !== 'number') return json({ error: 'Request protection is temporarily unavailable.' }, 503);
-  if (attempts > 5) return json({ error: 'Too many return requests. Please try again later.' }, 429);
+  if (attempts > 20) return json({ error: 'Too many return requests. Please try again later.' }, 429);
 
   let trackingHash = '';
   let order: any = null;
