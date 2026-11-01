@@ -7,7 +7,7 @@ export function adminJson(body: unknown, status = 200) {
 
 export function adminClient(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const anon = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const service = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !anon || !service) return { error: adminJson({ error: 'Admin service is not configured.' }, 503) };
   const authHeader = request.headers.get('authorization') || '';
