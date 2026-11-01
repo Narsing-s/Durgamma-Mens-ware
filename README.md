@@ -7,7 +7,7 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Responsive charcoal, ivory and muted-gold visual identity
 - Live product discovery from Supabase: product details, images, prices, sizes and available stock
 - Search, dynamic categories, budget filters, sorting and wishlist with one reset action
-- Demo catalogue shown only as a clearly labelled preview when Supabase is not configured
+- Demo catalogue and working local preview bag shown when Supabase is not configured; real order submission remains locked until live database and inventory are connected
 - Responsive product cards with accessible quick-add controls
 - Owner-only manual product photo uploads (JPG, PNG, WebP) with preview and replacement
 - Editable selling price and MRP/original price with server-side validation and automatic storefront discount display
