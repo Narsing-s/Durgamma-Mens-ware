@@ -68,6 +68,7 @@ export async function GET(request: NextRequest) {
     total: data.total_inr,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
+    deliveredAt: data.delivered_at,
     items: data.order_items || [],
   });
 }
