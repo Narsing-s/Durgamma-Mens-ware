@@ -72,7 +72,7 @@ begin
     if length(trim(coalesce(p_refund_reference,''))) < 4 or length(trim(p_refund_reference)) > 120 then
       raise exception 'Enter the actual bank/UPI refund reference before recording a refund';
     end if;
-    if p_refund_method not in ('upi','bank_transfer','cash','original_payment_method') then
+    if coalesce(p_refund_method,'') not in ('upi','bank_transfer','cash','original_payment_method') then
       raise exception 'Choose a valid refund method';
     end if;
     if p_refund_amount_inr is null or p_refund_amount_inr < 1 or p_refund_amount_inr > v_order.total_inr then
