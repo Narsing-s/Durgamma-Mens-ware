@@ -16,8 +16,23 @@ export default function AdminProductsPage() {
   const [editValues, setEditValues] = useState<Record<string, ProductEdit>>({});
   const [editFiles, setEditFiles] = useState<Record<string, File>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState('');
+  const [editPreviews, setEditPreviews] = useState<Record<string, string>>({});
   const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', mrp: '', slug: '', image_url: '' });
   const [variants, setVariants] = useState<VariantDraft[]>([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
+  useEffect(() => {
+    if (!imageFile) { setImagePreview(''); return; }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
+  useEffect(() => {
+    const previews = Object.fromEntries(Object.entries(editFiles).map(([id, file]) => [id, URL.createObjectURL(file)]));
+    setEditPreviews(previews);
+    return () => Object.values(previews).forEach(URL.revokeObjectURL);
+  }, [editFiles]);
+
   const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     : null;
@@ -158,7 +173,7 @@ export default function AdminProductsPage() {
         <label>Upload product photo (JPG, PNG or WebP, max 5 MB)
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFile(e.target.files?.[0] || null)}/>
         </label>
-        {imageFile && <div className="admin-image-preview"><img src={URL.createObjectURL(imageFile)} alt="Selected product preview"/><span>Selected: {imageFile.name}</span></div>}
+        {imageFile && <div className="admin-image-preview"><img src={imagePreview} alt="Selected product preview"/><span>Selected: {imageFile.name}</span></div>}
         <textarea placeholder="Description" value={form.description} onChange={e => setForm(v => ({ ...v, description: e.target.value }))} maxLength={5000}/>
         <div className="admin-variant-list">
           <h3>Size and colour variants</h3>
@@ -191,6 +206,7 @@ export default function AdminProductsPage() {
             <input aria-label="Image URL" value={editValue(product).image_url} onChange={e => updateEdit(product, 'image_url', e.target.value)}/>
             <label>Replace product photo
               <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Replace product photo" onChange={e => { const file = e.target.files?.[0]; if (file) setEditFiles(v => ({ ...v, [product.id]: file })); }}/>
+              {editFiles[product.id] && <div className="admin-image-preview"><img src={editPreviews[product.id] || ''} alt="Replacement product photo preview"/><span>Selected: {editFiles[product.id].name}</span></div>}
             </label>
             <textarea aria-label="Description" value={editValue(product).description} onChange={e => updateEdit(product, 'description', e.target.value)}/>
             <button className="gold-btn" onClick={() => saveEdit(product)}>SAVE PRODUCT DETAILS</button>
