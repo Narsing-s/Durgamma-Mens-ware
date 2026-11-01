@@ -17,10 +17,10 @@ export async function GET(request: NextRequest) {
     { table: 'orders', error: orders.error },
     { table: 'return_requests', error: returns.error },
     { table: 'product_variants', error: lowStock.error },
-  ].filter((item): item is { table: string; error: NonNullable<typeof item.error> } => Boolean(item.error));
+  ].filter(item => Boolean(item.error));
   if (failures.length) {
     for (const failure of failures) {
-      console.error('[admin/store] Database query failed:', {
+      if (failure.error) console.error('[admin/store] Database query failed:', {
         table: failure.table,
         code: failure.error.code,
         message: failure.error.message,
