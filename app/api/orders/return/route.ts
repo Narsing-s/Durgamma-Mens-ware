@@ -31,6 +31,8 @@ async function rateLimit(request: NextRequest): Promise<'ok' | 'limited' | 'unav
 }
 
 export async function POST(request: NextRequest) {
+  const contentLength = Number(request.headers.get('content-length') || 0);
+  if (contentLength > 8_000) return json({ error: 'Request is too large.' }, 413);
   const origin = request.headers.get('origin');
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
   if (origin && siteUrl && new URL(origin).origin !== new URL(siteUrl).origin) {
