@@ -121,7 +121,7 @@ export default function Checkout({items,onClose,onSuccess}:Props){
      <h3>YOUR ORDER</h3>
      {items.map(i=><div className="checkout-line" key={i.variantId||i.product.id+'-'+i.size+'-'+(i.colour||'Default')}>
       <span>{i.product.name}<small>Size {i.size} · Colour {i.colour||'Default'} · Qty {i.quantity}</small></span>
-      <b>{money((catalog.find(p=>clean(p.name)===clean(i.product.name))?.price_inr||i.product.price)*i.quantity)}</b>
+      <b>{money((catalog.find(p=>i.variantId?p.product_variants.some(v=>v.id===i.variantId):clean(p.name)===clean(i.product.name))?.price_inr||i.product.price)*i.quantity)}</b>
      </div>)}
      <div className="checkout-line"><span>Subtotal</span><b>{money(subtotal)}</b></div>
      <div className="checkout-line"><span>Shipping</span><b>{shipping===0?'FREE':money(shipping)}</b></div>
