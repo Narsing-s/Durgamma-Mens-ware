@@ -34,7 +34,8 @@ export default function TrackOrder() {
   const [returnType, setReturnType] = useState<'return'|'exchange'>('return');
   const [returnReason, setReturnReason] = useState('');
   const [returnNote, setReturnNote] = useState('');
-  const [returnBusy, setReturnBusy] = useState(false);\n  const [returnSubmitted, setReturnSubmitted] = useState(false);
+  const [returnBusy, setReturnBusy] = useState(false);
+  const [returnSubmitted, setReturnSubmitted] = useState(false);
   const [returnMessage, setReturnMessage] = useState('');
 
   useEffect(() => {
