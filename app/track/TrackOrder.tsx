@@ -11,7 +11,7 @@ type Order = {
   createdAt: string;
   updatedAt: string;
   deliveredAt?: string | null;
-  returnRequest?: { id: string; status: string; request_type: string; created_at: string } | null;
+  returnRequest?: { id: string; status: string; request_type: string; created_at: string; refund_reference?: string | null; refund_method?: string | null; refund_amount_inr?: number | null } | null;
   items: { product_name: string; size: string; quantity: number; line_total_inr: number }[];
   statusHistory?: { status: string; note: string; created_at: string }[];
 };
