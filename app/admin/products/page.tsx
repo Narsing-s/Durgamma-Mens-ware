@@ -5,13 +5,16 @@ import { createClient, User } from '@supabase/supabase-js';
 import Link from 'next/link';
 
 type VariantDraft = { sku: string; size: string; colour: string; stock: string };
+type ProductEdit = { name: string; category: string; description: string; price: string; image_url: string };
 
 export default function AdminProductsPage() {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState('');
   const [msg, setMsg] = useState('');
   const [items, setItems] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);\n  const [editValues, setEditValues] = useState<Record<string, {name:string;category:string;description:string;price:string;image_url:string}>>({});\n  const [editFiles, setEditFiles] = useState<Record<string, File>>({});
+  const [saving, setSaving] = useState(false);
+  const [editValues, setEditValues] = useState<Record<string, ProductEdit>>({});
+  const [editFiles, setEditFiles] = useState<Record<string, File>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', slug: '', image_url: '' });
   const [variants, setVariants] = useState<VariantDraft[]>([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
@@ -41,29 +44,46 @@ export default function AdminProductsPage() {
     setVariants(current => current.map((variant, i) => i === index ? { ...variant, [field]: value } : variant));
   }
 
+  function editValue(product: any): ProductEdit {
+    return editValues[product.id] || {
+      name: product.name,
+      category: product.category,
+      description: product.description || '',
+      price: String(product.price_inr),
+      image_url: product.image_url || '',
+    };
+  }
+
+  function updateEdit(product: any, field: keyof ProductEdit, value: string) {
+    setEditValues(current => ({ ...current, [product.id]: { ...editValue(product), [field]: value } }));
+  }
+
+  async function uploadImage(file: File): Promise<string> {
+    const uploadData = new FormData();
+    uploadData.append('file', file);
+    const response = await fetch('/api/admin/products/image', {
+      method: 'POST',
+      headers: { Authorization: 'Bearer ' + token },
+      body: uploadData,
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || 'Product image upload failed.');
+    return result.imageUrl;
+  }
+
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setMsg('');
-    if (variants.length < 1 || variants.some(v => !v.sku.trim() || !v.size.trim() || !Number.isInteger(Number(v.stock)) || Number(v.stock) < 0)) {
-      setMsg('Enter a unique SKU, size and valid opening stock for every variant.');
+    const skuSet = new Set(variants.map(v => v.sku.trim().toLowerCase()));
+    const variantSet = new Set(variants.map(v => v.size.trim().toLowerCase() + '|' + (v.colour.trim() || 'default').toLowerCase()));
+    if (!variants.length || variants.some(v => !v.sku.trim() || !v.size.trim() || !Number.isInteger(Number(v.stock)) || Number(v.stock) < 0) ||
+        skuSet.size !== variants.length || variantSet.size !== variants.length) {
+      setMsg('Each variant needs a unique SKU and unique size/colour combination, with valid opening stock.');
       return;
     }
     setSaving(true);
     try {
-      let imageUrl = form.image_url.trim();
-      if (imageFile) {
-        const upload = new FormData();
-        upload.append('file', imageFile);
-        const uploadResponse = await fetch('/api/admin/products/image', {
-          method: 'POST',
-          headers: { Authorization: 'Bearer ' + token },
-          body: upload,
-        });
-        const uploaded = await uploadResponse.json();
-        if (!uploadResponse.ok) throw new Error(uploaded.error || 'Product image upload failed.');
-        imageUrl = uploaded.imageUrl;
-      }
-
+      const imageUrl = imageFile ? await uploadImage(imageFile) : form.image_url.trim();
       const response = await fetch('/api/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
@@ -88,20 +108,25 @@ export default function AdminProductsPage() {
   }
 
   async function saveEdit(product: any) {
-    const values = editValues[product.id] || { name: product.name, category: product.category, description: product.description || '', price: String(product.price_inr), image_url: product.image_url || '' };
+    const values = editValue(product);
     setMsg('');
     try {
-      let imageUrl = values.image_url;
-      if (editFiles[product.id]) {
-        const formData = new FormData(); formData.append('file', editFiles[product.id]);
-        const upload = await fetch('/api/admin/products/image', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: formData });
-        const uploaded = await upload.json(); if (!upload.ok) throw new Error(uploaded.error || 'Image upload failed.'); imageUrl = uploaded.imageUrl;
-      }
-      const response = await fetch('/api/admin/products/' + product.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ name: values.name, category: values.category, description: values.description, price_inr: Number(values.price), image_url: imageUrl }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Product update failed.');
-      setMsg('Product details updated.'); setEditFiles(current => { const next = { ...current }; delete next[product.id]; return next; }); await load();
-    } catch (error) { setMsg(error instanceof Error ? error.message : 'Product update failed.'); }
+      const imageUrl = editFiles[product.id] ? await uploadImage(editFiles[product.id]) : values.image_url;
+      const response = await fetch('/api/admin/products/' + product.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify({ name: values.name, category: values.category, description: values.description, price_inr: Number(values.price), image_url: imageUrl }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Product update failed.');
+      setMsg('Product details updated.');
+      setEditFiles(current => { const next = { ...current }; delete next[product.id]; return next; });
+      await load();
+    } catch (error) {
+      setMsg(error instanceof Error ? error.message : 'Product update failed.');
+    }
   }
+
   async function publish(id: string, active: boolean) {
     const response = await fetch('/api/admin/products/' + id, {
       method: 'PATCH',
@@ -157,12 +182,14 @@ export default function AdminProductsPage() {
         <details className="admin-edit-product">
           <summary>Edit product details</summary>
           <div className="admin-product-form">
-            <input aria-label="Product name" value={editValues[product.id]?.name ?? product.name} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??'',name:e.target.value}}))}/>
-            <input aria-label="Category" value={editValues[product.id]?.category ?? product.category} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:e.target.value,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
-            <input aria-label="Price in INR" type="number" min="0" value={editValues[product.id]?.price ?? String(product.price_inr)} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:e.target.value,image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
-            <input aria-label="Image URL" value={editValues[product.id]?.image_url ?? product.image_url ?? ''} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:e.target.value}}))}/>
-            <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Replace product photo" onChange={e => {const file=e.target.files?.[0];if(file)setEditFiles(v=>({...v,[product.id]:file}));}}/>
-            <textarea aria-label="Description" value={editValues[product.id]?.description ?? product.description ?? ''} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:e.target.value,price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
+            <input aria-label="Product name" value={editValue(product).name} onChange={e => updateEdit(product, 'name', e.target.value)}/>
+            <input aria-label="Category" value={editValue(product).category} onChange={e => updateEdit(product, 'category', e.target.value)}/>
+            <input aria-label="Price in INR" type="number" min="0" value={editValue(product).price} onChange={e => updateEdit(product, 'price', e.target.value)}/>
+            <input aria-label="Image URL" value={editValue(product).image_url} onChange={e => updateEdit(product, 'image_url', e.target.value)}/>
+            <label>Replace product photo
+              <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Replace product photo" onChange={e => { const file = e.target.files?.[0]; if (file) setEditFiles(v => ({ ...v, [product.id]: file })); }}/>
+            </label>
+            <textarea aria-label="Description" value={editValue(product).description} onChange={e => updateEdit(product, 'description', e.target.value)}/>
             <button className="gold-btn" onClick={() => saveEdit(product)}>SAVE PRODUCT DETAILS</button>
           </div>
         </details>
