@@ -1,7 +1,8 @@
 'use client';
 
 import { ChangeEvent, useEffect, useState } from 'react';
-import { createClient, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
+import { getSupabaseBrowserClient } from '@/lib/supabase-browser';
 import Link from 'next/link';
 
 type VariantDraft = { sku: string; size: string; colour: string; stock: string };
@@ -33,9 +34,7 @@ export default function AdminProductsPage() {
     return () => Object.values(previews).forEach(URL.revokeObjectURL);
   }, [editFiles]);
 
-  const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-    ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
-    : null;
+  const supabase = getSupabaseBrowserClient();
 
   async function load(t = token) {
     if (!t) return;
