@@ -19,7 +19,8 @@ export default function AdminProductsPage() {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState('');
   const [editPreviews, setEditPreviews] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', mrp: '', slug: '', image_url: '' });
+  const productCategories = ['Shirts','T-Shirts','Jeans','Trousers','Innerwear','Shorts','Track Pants','Jackets','Ethnic Wear','Sleepwear','Accessories','Other'];
+  const [form, setForm] = useState({ name: '', category: 'Shirts', description: '', price: '', mrp: '', slug: '', image_url: '' });
   const [variants, setVariants] = useState<VariantDraft[]>([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
   useEffect(() => {
     if (!imageFile) { setImagePreview(''); return; }
@@ -171,7 +172,7 @@ export default function AdminProductsPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not create product.');
       setMsg('Product saved as a draft with ' + variants.length + ' variant(s). Review it and publish when ready.');
-      setForm({ name: '', category: 'Menswear', description: '', price: '', mrp: '', slug: '', image_url: '' });
+      setForm({ name: '', category: 'Shirts', description: '', price: '', mrp: '', slug: '', image_url: '' });
       setVariants([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
       setImageFile(null);
       await load();
@@ -224,7 +225,7 @@ export default function AdminProductsPage() {
       <p>Products are saved as drafts. Add all size/colour variants and verify stock before publishing.</p>
       <form className="admin-product-form" onSubmit={create}>
         <input placeholder="Product name" value={form.name} onChange={e => setForm(v => ({ ...v, name: e.target.value }))} required maxLength={120}/>
-        <input placeholder="Category" value={form.category} onChange={e => setForm(v => ({ ...v, category: e.target.value }))} required maxLength={80}/>
+        <select aria-label="Product category" value={form.category} onChange={e => setForm(v => ({ ...v, category: e.target.value }))} required>{productCategories.map(category => <option key={category} value={category}>{category}</option>)}</select>
         <input type="number" min="0" max="10000000" placeholder="Selling price (₹)" value={form.price} onChange={e => setForm(v => ({ ...v, price: e.target.value }))} required/>
         <input type="number" min="0" max="10000000" placeholder="MRP / original price (₹)" value={form.mrp} onChange={e => setForm(v => ({ ...v, mrp: e.target.value }))}/>
         <input placeholder="URL slug (optional)" value={form.slug} onChange={e => setForm(v => ({ ...v, slug: e.target.value }))}/>
@@ -249,7 +250,8 @@ export default function AdminProductsPage() {
       </form>
     </section>
     <section className="admin-section">
-      <h2>Existing products</h2>
+      <h2>All products</h2>
+      <p>Every product you have uploaded is listed here, including drafts. Choose a category when adding or editing a product, enter real opening stock for each size/colour, then publish it to the storefront.</p>
       {items.map(product => <div className="admin-product-item" key={product.id}>
         <div className="admin-row">
           <span><b>{product.name}</b><small>{product.category} · {product.product_variants?.length || 0} variants</small></span>
@@ -259,7 +261,7 @@ export default function AdminProductsPage() {
           <summary>Edit product details</summary>
           <div className="admin-product-form">
             <input aria-label="Product name" value={editValue(product).name} onChange={e => updateEdit(product, 'name', e.target.value)}/>
-            <input aria-label="Category" value={editValue(product).category} onChange={e => updateEdit(product, 'category', e.target.value)}/>
+            <select aria-label="Product category" value={editValue(product).category} onChange={e => updateEdit(product, 'category', e.target.value)}>{productCategories.map(category => <option key={category} value={category}>{category}</option>)}{!productCategories.includes(editValue(product).category) && <option value={editValue(product).category}>{editValue(product).category}</option>}</select>
             <input aria-label="Selling price in INR" type="number" min="0" value={editValue(product).price} onChange={e => updateEdit(product, 'price', e.target.value)}/>
             <input aria-label="MRP in INR" type="number" min="0" placeholder="MRP / original price (₹)" value={editValue(product).mrp} onChange={e => updateEdit(product, 'mrp', e.target.value)}/>
             <input aria-label="Image URL" value={editValue(product).image_url} onChange={e => updateEdit(product, 'image_url', e.target.value)}/>
