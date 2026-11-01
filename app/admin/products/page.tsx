@@ -11,7 +11,7 @@ export default function AdminProductsPage() {
   const [token, setToken] = useState('');
   const [msg, setMsg] = useState('');
   const [items, setItems] = useState<any[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [saving, setSaving] = useState(false);\n  const [editValues, setEditValues] = useState<Record<string, {name:string;category:string;description:string;price:string;image_url:string}>>({});\n  const [editFiles, setEditFiles] = useState<Record<string, File>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', slug: '', image_url: '' });
   const [variants, setVariants] = useState<VariantDraft[]>([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
@@ -87,6 +87,21 @@ export default function AdminProductsPage() {
     }
   }
 
+  async function saveEdit(product: any) {
+    const values = editValues[product.id] || { name: product.name, category: product.category, description: product.description || '', price: String(product.price_inr), image_url: product.image_url || '' };
+    setMsg('');
+    try {
+      let imageUrl = values.image_url;
+      if (editFiles[product.id]) {
+        const formData = new FormData(); formData.append('file', editFiles[product.id]);
+        const upload = await fetch('/api/admin/products/image', { method: 'POST', headers: { Authorization: 'Bearer ' + token }, body: formData });
+        const uploaded = await upload.json(); if (!upload.ok) throw new Error(uploaded.error || 'Image upload failed.'); imageUrl = uploaded.imageUrl;
+      }
+      const response = await fetch('/api/admin/products/' + product.id, { method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token }, body: JSON.stringify({ name: values.name, category: values.category, description: values.description, price_inr: Number(values.price), image_url: imageUrl }) });
+      const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Product update failed.');
+      setMsg('Product details updated.'); setEditFiles(current => { const next = { ...current }; delete next[product.id]; return next; }); await load();
+    } catch (error) { setMsg(error instanceof Error ? error.message : 'Product update failed.'); }
+  }
   async function publish(id: string, active: boolean) {
     const response = await fetch('/api/admin/products/' + id, {
       method: 'PATCH',
@@ -134,9 +149,23 @@ export default function AdminProductsPage() {
     </section>
     <section className="admin-section">
       <h2>Existing products</h2>
-      {items.map(product => <div className="admin-row" key={product.id}>
-        <span><b>{product.name}</b><small>{product.category} · {product.product_variants?.length || 0} variants</small></span>
-        <span>₹{product.price_inr} · {product.is_active ? 'Live' : 'Draft'} <button onClick={() => publish(product.id, !product.is_active)}>{product.is_active ? 'Unpublish' : 'Publish'}</button></span>
+      {items.map(product => <div className="admin-product-item" key={product.id}>
+        <div className="admin-row">
+          <span><b>{product.name}</b><small>{product.category} · {product.product_variants?.length || 0} variants</small></span>
+          <span>₹{product.price_inr} · {product.is_active ? 'Live' : 'Draft'} <button onClick={() => publish(product.id, !product.is_active)}>{product.is_active ? 'Unpublish' : 'Publish'}</button></span>
+        </div>
+        <details className="admin-edit-product">
+          <summary>Edit product details</summary>
+          <div className="admin-product-form">
+            <input aria-label="Product name" value={editValues[product.id]?.name ?? product.name} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??'',name:e.target.value}}))}/>
+            <input aria-label="Category" value={editValues[product.id]?.category ?? product.category} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:e.target.value,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
+            <input aria-label="Price in INR" type="number" min="0" value={editValues[product.id]?.price ?? String(product.price_inr)} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:e.target.value,image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
+            <input aria-label="Image URL" value={editValues[product.id]?.image_url ?? product.image_url ?? ''} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:v[product.id]?.description??product.description??'',price:v[product.id]?.price??String(product.price_inr),image_url:e.target.value}}))}/>
+            <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Replace product photo" onChange={e => {const file=e.target.files?.[0];if(file)setEditFiles(v=>({...v,[product.id]:file}));}}/>
+            <textarea aria-label="Description" value={editValues[product.id]?.description ?? product.description ?? ''} onChange={e => setEditValues(v => ({...v,[product.id]:{name:v[product.id]?.name??product.name,category:v[product.id]?.category??product.category,description:e.target.value,price:v[product.id]?.price??String(product.price_inr),image_url:v[product.id]?.image_url??product.image_url??''}}))}/>
+            <button className="gold-btn" onClick={() => saveEdit(product)}>SAVE PRODUCT DETAILS</button>
+          </div>
+        </details>
       </div>)}
     </section>
   </main>;
