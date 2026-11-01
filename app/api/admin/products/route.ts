@@ -17,7 +17,7 @@ export async function POST(request: NextRequest) {
  if(variants.some((v:any)=>!v.sku||v.sku.length>80||!v.size||v.size.length>30||!v.colour||v.colour.length>50||!Number.isInteger(v.stock)||v.stock<0)||new Set(variants.map((v:any)=>v.sku.toLowerCase())).size!==variants.length||new Set(combinations).size!==variants.length)return adminJson({error:'Check variant SKU, size, colour and non-negative stock. SKUs and size/colour combinations must be unique.'},400);
  const {data:created,error}=await auth.db.from('products').insert({name,slug,description,category,price_inr:price,compare_at_price_inr:compareAt,image_url:image||null,is_active:false}).select('id').single();
  if(error)return adminJson({error:error.code==='23505'?'A product with this slug or SKU already exists.':'Product could not be created.'},409);
- const {error:variantError}=await auth.db.from('product_variants').insert(variants.map((v:any)=>({...v,product_id:created.id})));
+ const {error:variantError}=await auth.db.from('product_variants').insert(variants.map((v:any)=>({...v,is_active:true,product_id:created.id})));
  if(variantError){await auth.db.from('products').delete().eq('id',created.id);return adminJson({error:'Product variants could not be saved. Check SKU uniqueness.'},409);}
  return adminJson({ok:true,id:created.id},201);
 }
