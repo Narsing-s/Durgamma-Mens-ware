@@ -67,7 +67,8 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
 - Add transactional email/SMS notifications and a secure order fulfilment process.
-- Use the owner-only admin dashboard to manage products, upload photos, create size/colour variants, publish drafts, update stock with an audit trail, configure delivery PIN codes, and process return/exchange requests.
+- Use the owner-only admin dashboard to manage products, upload photos directly from a computer or phone (JPG/PNG/WebP, max 5 MB), preview selected photos, replace product photos, edit selling price and MRP, create size/colour variants, publish drafts, update stock with an audit trail, configure delivery PIN codes, and process return/exchange requests.
+- Selling price is stored in `price_inr`; optional MRP/original price is stored in `compare_at_price_inr`. The server rejects an MRP below the selling price. Keep MRP accurate and do not use an inflated reference price.
 - Customers can request a return or exchange from their private tracking link within 7 days of delivery. The database checks eligibility and prevents duplicate active requests.
 - Order status transitions are enforced as pending → confirmed → packed → shipped → delivered, with cancellation allowed before shipment.
 - Verify the `STORE_ADMIN_EMAILS` allow-list, owner login, order status transitions and inventory restoration using a non-production test order.

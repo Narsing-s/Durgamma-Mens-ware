@@ -5,7 +5,7 @@ import { createClient, User } from '@supabase/supabase-js';
 import Link from 'next/link';
 
 type VariantDraft = { sku: string; size: string; colour: string; stock: string };
-type ProductEdit = { name: string; category: string; description: string; price: string; image_url: string };
+type ProductEdit = { name: string; category: string; description: string; price: string; mrp: string; image_url: string };
 
 export default function AdminProductsPage() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,7 +16,7 @@ export default function AdminProductsPage() {
   const [editValues, setEditValues] = useState<Record<string, ProductEdit>>({});
   const [editFiles, setEditFiles] = useState<Record<string, File>>({});
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', slug: '', image_url: '' });
+  const [form, setForm] = useState({ name: '', category: 'Menswear', description: '', price: '', mrp: '', slug: '', image_url: '' });
   const [variants, setVariants] = useState<VariantDraft[]>([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
   const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
     ? createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -50,6 +50,7 @@ export default function AdminProductsPage() {
       category: product.category,
       description: product.description || '',
       price: String(product.price_inr),
+      mrp: product.compare_at_price_inr ? String(product.compare_at_price_inr) : '',
       image_url: product.image_url || '',
     };
   }
@@ -89,14 +90,14 @@ export default function AdminProductsPage() {
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
         body: JSON.stringify({
           name: form.name, category: form.category, description: form.description,
-          price_inr: Number(form.price), slug: form.slug || undefined, image_url: imageUrl,
+          price_inr: Number(form.price), compare_at_price_inr: form.mrp.trim() ? Number(form.mrp) : null, slug: form.slug || undefined, image_url: imageUrl,
           variants: variants.map(v => ({ sku: v.sku.trim(), size: v.size.trim(), colour: v.colour.trim() || 'Default', stock: Number(v.stock) })),
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not create product.');
       setMsg('Product saved as a draft with ' + variants.length + ' variant(s). Review it and publish when ready.');
-      setForm({ name: '', category: 'Menswear', description: '', price: '', slug: '', image_url: '' });
+      setForm({ name: '', category: 'Menswear', description: '', price: '', mrp: '', slug: '', image_url: '' });
       setVariants([{ sku: '', size: 'M', colour: 'Default', stock: '0' }]);
       setImageFile(null);
       await load();
@@ -115,7 +116,7 @@ export default function AdminProductsPage() {
       const response = await fetch('/api/admin/products/' + product.id, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-        body: JSON.stringify({ name: values.name, category: values.category, description: values.description, price_inr: Number(values.price), image_url: imageUrl }),
+        body: JSON.stringify({ name: values.name, category: values.category, description: values.description, price_inr: Number(values.price), compare_at_price_inr: values.mrp.trim() ? Number(values.mrp) : null, image_url: imageUrl }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Product update failed.');
@@ -150,13 +151,14 @@ export default function AdminProductsPage() {
       <form className="admin-product-form" onSubmit={create}>
         <input placeholder="Product name" value={form.name} onChange={e => setForm(v => ({ ...v, name: e.target.value }))} required maxLength={120}/>
         <input placeholder="Category" value={form.category} onChange={e => setForm(v => ({ ...v, category: e.target.value }))} required maxLength={80}/>
-        <input type="number" min="0" max="10000000" placeholder="Price in INR" value={form.price} onChange={e => setForm(v => ({ ...v, price: e.target.value }))} required/>
+        <input type="number" min="0" max="10000000" placeholder="Selling price (₹)" value={form.price} onChange={e => setForm(v => ({ ...v, price: e.target.value }))} required/>
+        <input type="number" min="0" max="10000000" placeholder="MRP / original price (₹)" value={form.mrp} onChange={e => setForm(v => ({ ...v, mrp: e.target.value }))}/>
         <input placeholder="URL slug (optional)" value={form.slug} onChange={e => setForm(v => ({ ...v, slug: e.target.value }))}/>
         <input type="url" placeholder="Or paste an HTTPS image URL" value={form.image_url} onChange={e => { setForm(v => ({ ...v, image_url: e.target.value })); setImageFile(null); }}/>
         <label>Upload product photo (JPG, PNG or WebP, max 5 MB)
           <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(e: ChangeEvent<HTMLInputElement>) => setImageFile(e.target.files?.[0] || null)}/>
         </label>
-        {imageFile && <small>Selected image: {imageFile.name}</small>}
+        {imageFile && <div className="admin-image-preview"><img src={URL.createObjectURL(imageFile)} alt="Selected product preview"/><span>Selected: {imageFile.name}</span></div>}
         <textarea placeholder="Description" value={form.description} onChange={e => setForm(v => ({ ...v, description: e.target.value }))} maxLength={5000}/>
         <div className="admin-variant-list">
           <h3>Size and colour variants</h3>
@@ -177,14 +179,15 @@ export default function AdminProductsPage() {
       {items.map(product => <div className="admin-product-item" key={product.id}>
         <div className="admin-row">
           <span><b>{product.name}</b><small>{product.category} · {product.product_variants?.length || 0} variants</small></span>
-          <span>₹{product.price_inr} · {product.is_active ? 'Live' : 'Draft'} <button onClick={() => publish(product.id, !product.is_active)}>{product.is_active ? 'Unpublish' : 'Publish'}</button></span>
+          <span>₹{product.price_inr}{product.compare_at_price_inr ? ' / MRP ₹' + product.compare_at_price_inr : ''} · {product.is_active ? 'Live' : 'Draft'} <button onClick={() => publish(product.id, !product.is_active)}>{product.is_active ? 'Unpublish' : 'Publish'}</button></span>
         </div>
         <details className="admin-edit-product">
           <summary>Edit product details</summary>
           <div className="admin-product-form">
             <input aria-label="Product name" value={editValue(product).name} onChange={e => updateEdit(product, 'name', e.target.value)}/>
             <input aria-label="Category" value={editValue(product).category} onChange={e => updateEdit(product, 'category', e.target.value)}/>
-            <input aria-label="Price in INR" type="number" min="0" value={editValue(product).price} onChange={e => updateEdit(product, 'price', e.target.value)}/>
+            <input aria-label="Selling price in INR" type="number" min="0" value={editValue(product).price} onChange={e => updateEdit(product, 'price', e.target.value)}/>
+            <input aria-label="MRP in INR" type="number" min="0" placeholder="MRP / original price (₹)" value={editValue(product).mrp} onChange={e => updateEdit(product, 'mrp', e.target.value)}/>
             <input aria-label="Image URL" value={editValue(product).image_url} onChange={e => updateEdit(product, 'image_url', e.target.value)}/>
             <label>Replace product photo
               <input type="file" accept="image/jpeg,image/png,image/webp" aria-label="Replace product photo" onChange={e => { const file = e.target.files?.[0]; if (file) setEditFiles(v => ({ ...v, [product.id]: file })); }}/>
