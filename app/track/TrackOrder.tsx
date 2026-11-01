@@ -13,6 +13,7 @@ type Order = {
   deliveredAt?: string | null;
   returnRequest?: { id: string; status: string; request_type: string; created_at: string } | null;
   items: { product_name: string; size: string; quantity: number; line_total_inr: number }[];
+  statusHistory?: { status: string; note: string; created_at: string }[];
 };
 
 const steps = [
@@ -29,6 +30,7 @@ const date = (value: string) => new Date(value).toLocaleString('en-IN', {
 
 export default function TrackOrder() {
   const [token, setToken] = useState('');
+  const [checkoutEmail, setCheckoutEmail] = useState('');
   const [order, setOrder] = useState<Order | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -52,7 +54,7 @@ export default function TrackOrder() {
     setError('');
     setOrder(null);
     if (!clean) {
-      setError('Open the secure tracking link from your order confirmation.');
+      setError('Enter your order number and checkout email, or paste the secure tracking link.');
       return;
     }
     let suppliedToken = clean;
@@ -65,7 +67,11 @@ export default function TrackOrder() {
     }
     setBusy(true);
     try {
-      const response = await fetch('/api/orders/track?token=' + encodeURIComponent(suppliedToken), { cache: 'no-store' });
+      const isUrl = clean.startsWith('http://') || clean.startsWith('https://');
+      const isToken = isUrl || /^[A-Za-z0-9_-]{40,60}$/.test(clean);
+      const response = isToken
+        ? await fetch('/api/orders/track?token=' + encodeURIComponent(suppliedToken), { cache: 'no-store' })
+        : await fetch('/api/orders/track', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderNumber: clean, email: checkoutEmail }), cache: 'no-store' });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not find your order.');
       setOrder(data);
@@ -80,10 +86,10 @@ export default function TrackOrder() {
     event.preventDefault(); setReturnMessage('');
     let suppliedToken = token.trim();
     try { if (suppliedToken.startsWith('http://') || suppliedToken.startsWith('https://')) suppliedToken = new URL(suppliedToken).searchParams.get('token') || ''; } catch { suppliedToken = ''; }
-    if (!suppliedToken || returnReason.trim().length < 5) { setReturnMessage('Enter a reason with at least 5 characters.'); return; }
+    if (returnReason.trim().length < 5 || (!suppliedToken && (!order || !checkoutEmail.trim()))) { setReturnMessage('Enter a reason and verify your order using the checkout email.'); return; }
     setReturnBusy(true);
     try {
-      const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken, requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
+      const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken || undefined, orderNumber: order?.orderNumber, email: checkoutEmail.trim(), requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not submit your request.');
       setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnSubmitted(true); setReturnReason(''); setReturnNote('');
     } catch (err) { setReturnMessage(err instanceof Error ? err.message : 'Could not submit your request.'); } finally { setReturnBusy(false); }
@@ -101,10 +107,12 @@ export default function TrackOrder() {
     <section className="track-card">
       <p className="eyebrow">DURGAMMA MENSWEAR · ORDER CARE</p>
       <h1>Track your <em>order.</em></h1>
-      <p className="track-intro">Use the private tracking link sent after checkout. Your personal details are never shown on this page.</p>
+      <p className="track-intro">Track securely with your order number and checkout email, or use the private link from your confirmation email.</p>
       <form className="track-form" onSubmit={submit}>
-        <label htmlFor="tracking-token">SECURE TRACKING LINK OR TOKEN</label>
-        <div><input id="tracking-token" value={token} onChange={event => setToken(event.target.value)} placeholder="Paste your order tracking link" autoComplete="off" spellCheck={false}/><button disabled={busy}>{busy ? <LoaderCircle size={16}/> : <Search size={16}/>} TRACK ORDER</button></div>
+        <label htmlFor="tracking-token">ORDER NUMBER OR SECURE TRACKING LINK</label>
+        <div><input id="tracking-token" value={token} onChange={event => setToken(event.target.value)} placeholder="DMW-XXXXXXXXXX or paste tracking link" autoComplete="off" spellCheck={false}/></div>
+        <label htmlFor="checkout-email">CHECKOUT EMAIL (REQUIRED WITH ORDER NUMBER)</label>
+        <div><input id="checkout-email" type="email" value={checkoutEmail} onChange={event => setCheckoutEmail(event.target.value)} placeholder="Email used when placing the order" autoComplete="email"/><button disabled={busy}>{busy ? <LoaderCircle size={16}/> : <Search size={16}/>} TRACK ORDER</button></div>
       </form>
       {error && <p className="track-error" role="alert">{error}</p>}
       {busy && <p className="track-loading"><LoaderCircle size={16}/> Checking your order securely…</p>}
@@ -126,7 +134,7 @@ export default function TrackOrder() {
         {order.status === "delivered" && <section className="track-return-panel">
           <h3>RETURN OR EXCHANGE</h3>
           {order.returnRequest && order.returnRequest.status !== "rejected" ? <p>Existing {order.returnRequest.request_type} request: <b>{order.returnRequest.status.toUpperCase()}</b>. The store team will update this request as it is processed.</p> : order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
-            <p>Eligible orders can be returned or exchanged within 7 days of delivery. Your request will be reviewed by the store team.</p>
+            <p>Request a return or exchange within 7 calendar days of delivery. Items must be unused, unwashed, unaltered, undamaged, with original tags and packaging. Requests are reviewed after the returned item is received and inspected. Refunds are recorded only after the store has actually issued the payment; COD refunds are handled manually.</p>
             <form onSubmit={submitReturn}>
               <label>REQUEST TYPE<select value={returnType} onChange={event => setReturnType(event.target.value as "return"|"exchange")}><option value="return">Return</option><option value="exchange">Exchange</option></select></label>
               <label>REASON<textarea value={returnReason} onChange={event => setReturnReason(event.target.value)} minLength={5} maxLength={500} required placeholder="Tell us why you need a return or exchange"/></label>
@@ -136,6 +144,7 @@ export default function TrackOrder() {
           </> : <p>The 7-day return/exchange period has ended or the delivery date is not available. Please contact the store for assistance.</p>}
           {returnMessage && <p className="track-return-message" role="status">{returnMessage}</p>}
         </section>}
+        {order.statusHistory && order.statusHistory.length > 0 && <div className="track-items"><h3>STATUS UPDATES</h3>{order.statusHistory.map((event,index)=><div className="track-item" key={index}><span><b>{event.status.replace('_',' ').toUpperCase()}</b><small>{event.note || 'Order status updated'}</small></span><small>{date(event.created_at)}</small></div>)}</div>}
         <p className="track-updated">Last updated {date(order.updatedAt)}</p>
       </section>}
     </section>
