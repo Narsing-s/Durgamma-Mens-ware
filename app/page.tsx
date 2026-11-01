@@ -9,14 +9,14 @@ type BagItem={id:string;size:string;qty:number;variantId?:string};
 type CatalogResponse={configured:boolean;products:Array<{id:string;name:string;category:string;price_inr:number;compare_at_price_inr:number|null;image_url:string|null;description:string|null;product_variants:Variant[]}>};
 const demoVariants=(productId:string):Variant[]=>['S','M','L','XL','XXL'].map(size=>({id:'demo-'+productId+'-'+size,size,stock:5,colour:'Default'}));
 const demoProducts:Product[]=[
-{id:'1',name:'The Signature Oxford',category:'Shirts',price:1499,oldPrice:2199,tag:'BESTSELLER',image:'photo-1596755094514-f87e34085b2c',description:'A refined everyday Oxford with a clean silhouette and easy, breathable feel.',variants:[]},
-{id:'2',name:'Everyday Essential Tee',category:'T-Shirts',price:799,oldPrice:1199,tag:'NEW ARRIVAL',image:'photo-1521572163474-6864f9cf17ab',description:'The perfect-weight tee, designed to become the first thing you reach for.',variants:[]},
-{id:'3',name:'Relaxed Straight Denim',category:'Jeans',price:1899,oldPrice:2699,tag:'CUSTOMER FAVOURITE',image:'photo-1542272604-787c3835535d',description:'A versatile straight-leg profile with a relaxed modern attitude.',variants:[]},
-{id:'4',name:'Modern Fit Linen Shirt',category:'Shirts',price:1699,oldPrice:2299,tag:'',image:'photo-1602810318383-e386cc2a3ccf',description:'Light texture and understated tailoring for warm days and late evenings.',variants:[]},
-{id:'5',name:'Classic Polo Shirt',category:'T-Shirts',price:999,oldPrice:1499,tag:'TRENDING',image:'photo-1625910513413-5fc45c2fcb42',description:'A smart-casual staple that moves easily from weekday to weekend.',variants:[]},
-{id:'6',name:'Tailored Smart Trousers',category:'Trousers',price:1799,oldPrice:2499,tag:'',image:'photo-1473966968600-fa801b869a1a',description:'A clean tailored shape with the versatility to dress up or down.',variants:[]},
-{id:'7',name:'Weekend Utility Shirt',category:'Shirts',price:1599,oldPrice:2199,tag:'NEW ARRIVAL',image:'photo-1598033129183-c4f50c736f10',description:'Utility-inspired details meet a relaxed fit for off-duty days.',variants:[]},
-{id:'8',name:'Premium Denim Jacket',category:'Outerwear',price:2499,oldPrice:3499,tag:'LIMITED EDITION',image:'photo-1551028719-00167b16eac5',description:'A timeless layer with confident structure and everyday versatility.',variants:[]}
+{id:'1',name:'The Signature Oxford',category:'Shirts',price:1499,oldPrice:2199,tag:'BESTSELLER',image:'photo-1596755094514-f87e34085b2c',description:'A refined everyday Oxford with a clean silhouette and easy, breathable feel.',variants:demoVariants('1')},
+{id:'2',name:'Everyday Essential Tee',category:'T-Shirts',price:799,oldPrice:1199,tag:'NEW ARRIVAL',image:'photo-1521572163474-6864f9cf17ab',description:'The perfect-weight tee, designed to become the first thing you reach for.',variants:demoVariants('2')},
+{id:'3',name:'Relaxed Straight Denim',category:'Jeans',price:1899,oldPrice:2699,tag:'CUSTOMER FAVOURITE',image:'photo-1542272604-787c3835535d',description:'A versatile straight-leg profile with a relaxed modern attitude.',variants:demoVariants('3')},
+{id:'4',name:'Modern Fit Linen Shirt',category:'Shirts',price:1699,oldPrice:2299,tag:'',image:'photo-1602810318383-e386cc2a3ccf',description:'Light texture and understated tailoring for warm days and late evenings.',variants:demoVariants('4')},
+{id:'5',name:'Classic Polo Shirt',category:'T-Shirts',price:999,oldPrice:1499,tag:'TRENDING',image:'photo-1625910513413-5fc45c2fcb42',description:'A smart-casual staple that moves easily from weekday to weekend.',variants:demoVariants('5')},
+{id:'6',name:'Tailored Smart Trousers',category:'Trousers',price:1799,oldPrice:2499,tag:'',image:'photo-1473966968600-fa801b869a1a',description:'A clean tailored shape with the versatility to dress up or down.',variants:demoVariants('6')},
+{id:'7',name:'Weekend Utility Shirt',category:'Shirts',price:1599,oldPrice:2199,tag:'NEW ARRIVAL',image:'photo-1598033129183-c4f50c736f10',description:'Utility-inspired details meet a relaxed fit for off-duty days.',variants:demoVariants('7')},
+{id:'8',name:'Premium Denim Jacket',category:'Outerwear',price:2499,oldPrice:3499,tag:'LIMITED EDITION',image:'photo-1551028719-00167b16eac5',description:'A timeless layer with confident structure and everyday versatility.',variants:demoVariants('8')}
 ];
 const sizes=['S','M','L','XL','XXL'];
 const rupees=(n:number)=>'₹'+n.toLocaleString('en-IN');
