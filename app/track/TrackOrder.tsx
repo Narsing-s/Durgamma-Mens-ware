@@ -11,8 +11,8 @@ type Order = {
   createdAt: string;
   updatedAt: string;
   deliveredAt?: string | null;
-  returnRequest?: { id: string; status: string; request_type: string; created_at: string } | null;
-  items: { product_name: string; size: string; quantity: number; line_total_inr: number }[];
+  returnRequest?: { id: string; status: string; request_type: string; created_at: string; order_item_id?: string | null; order_items?: { product_name: string; size: string; quantity: number } | null; refund_reference?: string | null; refund_method?: string | null; refund_amount_inr?: number | null } | null;
+  items: { id: string; product_name: string; size: string; quantity: number; line_total_inr: number }[];
   statusHistory?: { status: string; note: string; created_at: string }[];
 };
 
@@ -37,6 +37,8 @@ export default function TrackOrder() {
   const [returnType, setReturnType] = useState<'return'|'exchange'>('return');
   const [returnReason, setReturnReason] = useState('');
   const [returnNote, setReturnNote] = useState('');
+  const [returnTermsAccepted, setReturnTermsAccepted] = useState(false);
+  const [selectedReturnItem, setSelectedReturnItem] = useState('');
   const [returnBusy, setReturnBusy] = useState(false);
   const [returnSubmitted, setReturnSubmitted] = useState(false);
   const [returnMessage, setReturnMessage] = useState('');
@@ -75,6 +77,7 @@ export default function TrackOrder() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not find your order.');
       setOrder(data);
+      setSelectedReturnItem(data.items?.[0]?.id || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not find your order.');
     } finally {
@@ -86,12 +89,12 @@ export default function TrackOrder() {
     event.preventDefault(); setReturnMessage('');
     let suppliedToken = token.trim();
     try { if (suppliedToken.startsWith('http://') || suppliedToken.startsWith('https://')) suppliedToken = new URL(suppliedToken).searchParams.get('token') || ''; } catch { suppliedToken = ''; }
-    if (returnReason.trim().length < 5 || (!suppliedToken && (!order || !checkoutEmail.trim()))) { setReturnMessage('Enter a reason and verify your order using the checkout email.'); return; }
+    if (returnReason.trim().length < 5 || !returnTermsAccepted || !selectedReturnItem || (!suppliedToken && (!order || !checkoutEmail.trim()))) { setReturnMessage('Enter a reason, verify your order and confirm the item-condition criteria.'); return; }
     setReturnBusy(true);
     try {
-      const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken || undefined, orderNumber: order?.orderNumber, email: checkoutEmail.trim(), requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
+      const response = await fetch('/api/orders/return', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ token: suppliedToken || undefined, orderNumber: order?.orderNumber, email: checkoutEmail.trim(), orderItemId: selectedReturnItem, requestType: returnType, reason: returnReason.trim(), customerNote: returnNote.trim() }) });
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not submit your request.');
-      setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnSubmitted(true); setReturnReason(''); setReturnNote('');
+      setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnSubmitted(true); setReturnReason(''); setReturnNote(''); setReturnTermsAccepted(false);
     } catch (err) { setReturnMessage(err instanceof Error ? err.message : 'Could not submit your request.'); } finally { setReturnBusy(false); }
   }
   function submit(event: FormEvent) {
@@ -133,13 +136,15 @@ export default function TrackOrder() {
         <div className="track-items"><h3>ORDER SUMMARY</h3>{order.items.map((item,index)=><div className="track-item" key={index}><span>{item.product_name}<small>Size {item.size} · Qty {item.quantity}</small></span><b>{money(item.line_total_inr)}</b></div>)}<div className="track-total"><span>Order total</span><b>{money(order.total)}</b></div><p className="track-payment">Payment status: {order.paymentStatus.replace('_',' ').toUpperCase()}</p></div>
         {order.status === "delivered" && <section className="track-return-panel">
           <h3>RETURN OR EXCHANGE</h3>
-          {order.returnRequest && order.returnRequest.status !== "rejected" ? <p>Existing {order.returnRequest.request_type} request: <b>{order.returnRequest.status.toUpperCase()}</b>. The store team will update this request as it is processed.</p> : order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
-            <p>Request a return or exchange within 7 calendar days of delivery. Items must be unused, unwashed, unaltered, undamaged, with original tags and packaging. Requests are reviewed after the returned item is received and inspected. Refunds are recorded only after the store has actually issued the payment; COD refunds are handled manually.</p>
+          {order.returnRequest && order.returnRequest.status !== "rejected" ? <p>Existing {order.returnRequest.request_type} request for {order.returnRequest.order_items?.product_name || 'the selected product'}: <b>{order.returnRequest.status.toUpperCase()}</b>. The store team will update this request as it is processed. {order.returnRequest.refund_reference ? 'Refund reference: ' + order.returnRequest.refund_reference + '.' : ''}</p> : order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
+            <p>Request a return or exchange for an individual product within 7 calendar days of delivery. Items must be unused, unwashed, unaltered and undamaged, with original tags and packaging. Requests are reviewed after the item is received and inspected. Refunds are recorded only after the store has actually issued the payment; COD refunds are handled manually.</p>
             <form onSubmit={submitReturn}>
+              <label>PRODUCT TO RETURN OR EXCHANGE<select value={selectedReturnItem} onChange={event => setSelectedReturnItem(event.target.value)} required>{order.items.map(item => <option key={item.id} value={item.id}>{item.product_name} · Size {item.size} · Qty {item.quantity}</option>)}</select></label>
               <label>REQUEST TYPE<select value={returnType} onChange={event => setReturnType(event.target.value as "return"|"exchange")}><option value="return">Return</option><option value="exchange">Exchange</option></select></label>
               <label>REASON<textarea value={returnReason} onChange={event => setReturnReason(event.target.value)} minLength={5} maxLength={500} required placeholder="Tell us why you need a return or exchange"/></label>
               <label>ADDITIONAL NOTE (OPTIONAL)<textarea value={returnNote} onChange={event => setReturnNote(event.target.value)} maxLength={500} placeholder="Preferred size for exchange, if applicable"/></label>
-              <button disabled={returnBusy}>{returnBusy ? "SUBMITTING…" : "SUBMIT REQUEST"}</button>
+              <label className="track-return-consent"><input type="checkbox" checked={returnTermsAccepted} onChange={event => setReturnTermsAccepted(event.target.checked)} required/> I confirm the item is unused, unwashed, unaltered and undamaged, with its original tags and packaging.</label>
+              <button disabled={returnBusy || !returnTermsAccepted}>{returnBusy ? "SUBMITTING…" : "SUBMIT REQUEST"}</button>
             </form>
           </> : <p>The 7-day return/exchange period has ended or the delivery date is not available. Please contact the store for assistance.</p>}
           {returnMessage && <p className="track-return-message" role="status">{returnMessage}</p>}

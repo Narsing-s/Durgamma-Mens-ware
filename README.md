@@ -12,7 +12,10 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Owner-only manual product photo uploads (JPG, PNG, WebP) with preview and replacement
 - Editable selling price and MRP/original price with server-side validation and automatic storefront discount display
 - Multiple size/colour variants with SKU and stock controls, including customer-facing colour selection
-- Secure customer return/exchange requests from private order tracking links
+- Customer order tracking by secure link or order number plus checkout email
+- Transactional order/status/delivery emails through Resend when sender credentials are configured
+- Customer delivery OTP verification before an order can be marked delivered
+- Seven-day return/exchange requests with eligibility checks, inspection stages and auditable manual refund references
 - Admin return processing and enforced order fulfilment transitions
 - Cart quantity limits, clear shipping estimate and server-verified checkout totals
 - Persistent shopping bag with size selection and quantity controls
@@ -40,9 +43,9 @@ Open http://localhost:3000.
 2. Review and apply `supabase/schema.sql` in the SQL editor.
 3. Add real products and active size/colour variants. Product names, variant sizes and stock must match the catalogue used at checkout.
 4. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and the server-only `SUPABASE_SERVICE_ROLE_KEY` in your hosting environment. Never expose the service-role key to the browser or commit credentials.
-5. Configure both Upstash Redis REST variables before enabling order creation; the server-side order route fails closed when rate limiting is unavailable.
+5. Checkout and customer tracking/return endpoints use Supabase-backed rate limiting; apply the corresponding database migrations before accepting live traffic.
 
-Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql), the real-store operations, inventory audit, PIN shipping, product media/returns and workflow hardening migrations in dependency order. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for full migration and launch requirements.
+Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql), the real-store operations, inventory audit, PIN shipping, product media/returns, rate-limit and [delivery OTP/refund migration](supabase/migrations/20261105_delivery_otp_and_refunds.sql) in dependency order. The latest migration adds expiring delivery OTPs, tracking rate limits and refund audit fields. Run it in Supabase SQL Editor before deploying this branch. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for full migration and launch requirements.
 
 ## Deployment
 
@@ -53,12 +56,13 @@ Deploy this Next.js application to a compatible Node.js host or a supported Next
 - Replace sample catalogue data and sample photography with accurate, store-owned product content.
 - Confirm Supabase catalogue products and variants match the displayed products and selected sizes.
 - Configure delivery serviceability, shipping rules, customer support, returns, privacy and terms.
-- Configure transactional order notifications and operational order fulfilment.
+- Configure transactional email using `RESEND_API_KEY` and `ORDER_EMAIL_FROM` (the sender must use a domain verified in Resend); test confirmation, status, delivery-OTP and delivered emails.
+- Confirm the seven-day return policy and eligibility criteria before publishing them to customers.
 - Run the full build and checkout tests with production-like data.
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
 - Configure the owner’s Supabase Auth account and exact `STORE_ADMIN_EMAILS` allow-list, then verify owner access to product, inventory and order management before launch.
 
-The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Upstash rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Customer accounts/order history, carrier integration, transactional notifications and online payments are not yet enabled.
+The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Supabase-backed rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Carrier integration and online payments are not yet enabled. Customer tracking and operational email notifications require the new database migration and Resend sender configuration described above.
 
 ## Customer accounts
 
