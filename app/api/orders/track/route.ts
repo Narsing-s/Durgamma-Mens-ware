@@ -52,7 +52,7 @@ function publicOrder(data: any) {
   };
 }
 
-const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,refund_reference,refund_method,refund_amount_inr),order_status_events(status,note,created_at)';
+const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(id,product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,order_item_id,refund_reference,refund_method,refund_amount_inr,order_items(product_name,size,quantity)),order_status_events(status,note,created_at)';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token') || '';
