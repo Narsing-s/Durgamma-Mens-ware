@@ -11,7 +11,7 @@ declare global {
 type CartLine={product:{id:string;name:string;price:number;image:string};size:string;colour?:string;quantity:number;variantId?:string};
 type Variant={id:string;size:string;stock:number;colour:string};
 type CatalogProduct={id:string;name:string;price_inr:number;product_variants:Variant[]};
-type Props={items:CartLine[];onClose:()=>void;onSuccess:()=>void};
+type Props={items:CartLine[];onClose:()=>void;onSuccess:()=>void;onOrderPlaced:()=>void};
 type PaymentMethod='cod'|'online';
 const money=(n:number)=>'₹'+n.toLocaleString('en-IN');
 const clean=(s:string)=>s.toLowerCase().replace(/[^a-z0-9]+/g,' ').trim();
@@ -38,7 +38,7 @@ async function loadRazorpay(): Promise<boolean> {
   return Boolean(window.Razorpay);
 }
 
-export default function Checkout({items,onClose,onSuccess}:Props){
+export default function Checkout({items,onClose,onSuccess,onOrderPlaced}:Props){
  const [catalog,setCatalog]=useState<CatalogProduct[]>([]);
  const [catalogState,setCatalogState]=useState<'loading'|'ready'|'error'>('loading');
  const [busy,setBusy]=useState(false),[error,setError]=useState(''),[success,setSuccess]=useState(''),[trackingUrl,setTrackingUrl]=useState('');
@@ -99,8 +99,9 @@ export default function Checkout({items,onClose,onSuccess}:Props){
     if(!response.ok)throw new Error(data.error||'Could not place your COD order.');
     if(!Number.isInteger(data.subtotal)||!Number.isInteger(data.shipping)||!Number.isInteger(data.total)||data.subtotal+data.shipping!==data.total)throw new Error('The server returned an invalid order total. Please contact support before retrying.');
     const adjusted=data.subtotal!==subtotal||data.shipping!==shipping;
+    onOrderPlaced();
     setTrackingUrl(typeof data.trackingToken==='string'?'/track?token='+encodeURIComponent(data.trackingToken):'');
-    setSuccess('Order '+data.orderNumber+' placed. Subtotal '+money(data.subtotal)+' + shipping '+money(data.shipping)+'. Pay '+money(data.total)+' on delivery.'+(adjusted?' The live catalogue price changed; the server-confirmed amount is shown.':''));
+    setSuccess('Order '+data.orderNumber+' is awaiting your email confirmation. Subtotal '+money(data.subtotal)+' + shipping '+money(data.shipping)+'. Pay '+money(data.total)+' on delivery after confirming.'+(adjusted?' The live catalogue price changed; the server-confirmed amount is shown.':'')+(data.emailSent?' A confirmation email has been sent.':' The order email could not be sent; please contact the store before proceeding.'));
     return;
    }
 
