@@ -138,7 +138,14 @@ export async function POST(request: NextRequest) {
     .eq('id', order.order_id);
   if (confirmationTokenError) {
     console.error('Order confirmation token could not be saved for', order.order_number, confirmationTokenError.message);
-    return json({ error: 'Your order was created, but its confirmation link could not be prepared. Please contact the store and quote order ' + order.order_number + '.' }, 500);
+    return json({
+      ok: true, orderNumber: order.order_number,
+      subtotal: order.subtotal_inr, shipping: order.shipping_inr, total: order.total_inr,
+      paymentMethod: 'cod', status: 'pending', trackingToken: trackingError ? null : trackingToken,
+      trackingUrl: trackingError ? null : (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '') + '/track?token=' + encodeURIComponent(trackingToken),
+      emailSent: false,
+      message: 'Your order was created but the confirmation email could not be prepared. Please contact the store and quote order ' + order.order_number + '.',
+    }, 201);
   }
 
   const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
