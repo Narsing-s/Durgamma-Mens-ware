@@ -52,7 +52,9 @@ function publicOrder(data: any) {
   };
 }
 
-const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(id,product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,order_item_id,refund_reference,refund_method,refund_amount_inr,order_items(product_name,size,quantity)),order_status_events(status,note,created_at)';
+// return_requests.order_item_id is a plain UUID column in the deployed schema,
+// not a declared foreign key. Do not ask PostgREST to embed order_items through it.
+const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(id,product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,order_item_id,refund_reference,refund_method,refund_amount_inr),order_status_events(status,note,created_at)';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token') || '';
@@ -68,7 +70,10 @@ export async function GET(request: NextRequest) {
   const tokenHash = createHash('sha256').update(token).digest('hex');
   const { data, error } = await db.from('orders').select(orderSelect)
     .eq('tracking_token_hash', tokenHash).maybeSingle();
-  if (error) return json({ error: 'We could not retrieve this order right now.' }, 503);
+  if (error) {
+    console.error('[order-tracking] Secure token lookup failed:', error.message, error.code);
+    return json({ error: 'We could not retrieve this order right now.' }, 503);
+  }
   if (!data) return json({ error: 'This tracking link is invalid or has expired.' }, 404);
   return json(publicOrder(data));
 }
@@ -89,7 +94,10 @@ export async function POST(request: NextRequest) {
 
   const { data, error } = await db.from('orders').select(orderSelect)
     .eq('order_number', orderNumber).eq('email', email).maybeSingle();
-  if (error) return json({ error: 'We could not retrieve this order right now.' }, 503);
+  if (error) {
+    console.error('[order-tracking] Order-number lookup failed:', error.message, error.code);
+    return json({ error: 'We could not retrieve this order right now.' }, 503);
+  }
   if (!data) return json({ error: 'We could not find an order matching those details. Check the order number and checkout email.' }, 404);
   return json(publicOrder(data));
 }
