@@ -127,7 +127,7 @@ export default function Checkout({items,onClose,onSuccess,onOrderPlaced}:Props){
        const verified=await fetch('/api/payments/razorpay/verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payment)});
        const result=await verified.json();
        if(!verified.ok)throw new Error(result.error||'Payment verification failed. Contact support before retrying.');
-       finished=true;pendingRazorpayOrderId=null;setSuccess('Payment received and verified. Order '+(result.orderNumber||data.orderNumber)+' is confirmed. Total paid: '+money(data.total)+'.');
+       finished=true;pendingRazorpayOrderId=null;onOrderPlaced();setSuccess('Payment received and verified. Order '+(result.orderNumber||data.orderNumber)+' is confirmed. Total paid: '+money(data.total)+'.');
        resolve();
       }catch(err){finished=true;reject(err instanceof Error?err:new Error('Payment verification is pending. Please contact support with order '+data.orderNumber+'.'));}
      }
