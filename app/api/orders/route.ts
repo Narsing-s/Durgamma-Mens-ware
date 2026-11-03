@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
     return json({ error: 'Your order was created, but its confirmation link could not be prepared. Please contact the store and quote order ' + order.order_number + '.' }, 500);
   }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
   const trackingUrl = trackingError ? null : siteUrl + '/track?token=' + encodeURIComponent(trackingToken);
   const confirmUrl = siteUrl + '/order-confirmation/' + encodeURIComponent(confirmationToken);
   const emailResult = await sendStoreEmail({
@@ -157,7 +157,7 @@ export async function POST(request: NextRequest) {
       'This secure link expires in 24 hours. Choose Confirm or Cancel on the page.',
       trackingUrl ? 'After confirmation, track your order: ' + trackingUrl : 'After confirmation, track your order at ' + siteUrl + '/track.',
       'Thank you for shopping with Durgamma Menswear.',
-    ].join('\\n'),
+    ].join('\n'),
     html: '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Please confirm your order.</h1><p>Hello ' + escapeEmailHtml(body.customerName.trim()) + ',</p><p>We received your Cash on Delivery order <strong>' + escapeEmailHtml(order.order_number) + '</strong>.</p><p>Order total: <strong>INR ' + Number(order.total_inr).toLocaleString('en-IN') + '</strong>.</p><p><strong>Your order will not be prepared until you confirm it.</strong></p><p><a href="' + confirmUrl + '" style="display:inline-block;padding:14px 22px;background:#987b4e;color:#fff;text-decoration:none;margin-right:8px">REVIEW & CONFIRM / CANCEL</a></p><p>This secure link expires in 24 hours. On the page, choose Confirm Order or Cancel Order.</p><p>Thank you for shopping with Durgamma Menswear.</p></div>',
   });
 
