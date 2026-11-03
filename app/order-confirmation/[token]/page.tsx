@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { CheckCircle2, XCircle, LoaderCircle, ShieldCheck } from 'lucide-react';
 
@@ -9,6 +9,8 @@ export default function OrderConfirmationPage() {
   const [busy, setBusy] = useState(false);
   const [result, setResult] = useState<{status:'confirmed'|'cancelled';orderNumber:string}|null>(null);
   const [error, setError] = useState('');
+  const [preferredAction, setPreferredAction] = useState<'confirm'|'cancel'|null>(null);
+  useEffect(() => { const value = new URLSearchParams(window.location.search).get('action'); if (value === 'confirm' || value === 'cancel') setPreferredAction(value); }, []);
 
   async function decide(action: 'confirm'|'cancel') {
     if (busy || result) return;
@@ -38,11 +40,11 @@ export default function OrderConfirmationPage() {
       </> : <>
         <ShieldCheck size={40} color="#987b4e"/>
         <h1>Review your order</h1>
-        <p>Choose one option below. This secure link can only be used once and expires after 24 hours.</p>
+        <p>{preferredAction === 'confirm' ? 'You selected Confirm Order in your email.' : preferredAction === 'cancel' ? 'You selected Cancel Order in your email.' : 'Choose one option below.'} This secure link can only be used once and expires after 24 hours. Nothing changes until you press a button below.</p>
         {error&&<p role="alert" style={{color:'#a34c45'}}>{error}</p>}
         <div style={{display:'flex',gap:12,justifyContent:'center',flexWrap:'wrap',marginTop:24}}>
-          <button disabled={busy} onClick={()=>decide('confirm')} style={{padding:'13px 20px',background:'#987b4e',color:'#fff',border:0,cursor:'pointer'}}>{busy?<LoaderCircle size={16}/>: 'CONFIRM ORDER'}</button>
-          <button disabled={busy} onClick={()=>decide('cancel')} style={{padding:'13px 20px',background:'#fff',color:'#8b3e38',border:'1px solid #c9aaa5',cursor:'pointer'}}>CANCEL ORDER</button>
+          <button disabled={busy} onClick={()=>decide('confirm')} style={{padding:'13px 20px',background:'#987b4e',color:'#fff',border:preferredAction==='confirm'?'3px solid #d7c39e':0,cursor:'pointer'}}>{busy?<LoaderCircle size={16}/>: 'CONFIRM ORDER'}</button>
+          <button disabled={busy} onClick={()=>decide('cancel')} style={{padding:'13px 20px',background:'#fff',color:'#8b3e38',border:preferredAction==='cancel'?'3px solid #c9aaa5':'1px solid #c9aaa5',cursor:'pointer'}}>CANCEL ORDER</button>
         </div>
       </>}
     </section>
