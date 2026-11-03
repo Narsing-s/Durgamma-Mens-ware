@@ -176,7 +176,7 @@ export async function POST(request: NextRequest) {
     total: order.total_inr,
     paymentMethod: 'cod',
     status: 'pending',
-    confirmationUrl,
+    confirmationUrl: confirmUrl,
     trackingToken: trackingError ? null : trackingToken,
     trackingUrl,
     emailSent: emailResult.sent,
