@@ -126,29 +126,39 @@ export async function POST(request: NextRequest) {
     console.error('Order tracking token could not be saved for', order.order_number, trackingError.message);
   }
 
-  const { error: confirmationError } = await supabase.rpc('set_store_order_status', {
-    p_order_id: order.order_id,
-    p_status: 'confirmed',
-    p_note: 'Automatically confirmed when the customer completed Cash on Delivery checkout.',
-  });
-  if (confirmationError) console.error('Could not confirm order', order.order_number, confirmationError.message);
+  const confirmationToken = randomBytes(32).toString('base64url');
+  const confirmationHash = createHash('sha256').update(confirmationToken).digest('hex');
+  const { error: confirmationTokenError } = await supabase
+    .from('orders')
+    .update({
+      order_status: 'pending',
+      confirmation_token_hash: confirmationHash,
+      confirmation_expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    })
+    .eq('id', order.order_id);
+  if (confirmationTokenError) {
+    console.error('Order confirmation token could not be saved for', order.order_number, confirmationTokenError.message);
+    return json({ error: 'Your order was created, but its confirmation link could not be prepared. Please contact the store and quote order ' + order.order_number + '.' }, 500);
+  }
 
-  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\\/$/, '');
   const trackingUrl = trackingError ? null : siteUrl + '/track?token=' + encodeURIComponent(trackingToken);
-  const statusLabel = confirmationError ? 'Order received' : 'Confirmed';
+  const confirmUrl = siteUrl + '/order-confirmation/' + encodeURIComponent(confirmationToken);
   const emailResult = await sendStoreEmail({
     to: body.email.trim().toLowerCase(),
-    subject: 'Order ' + order.order_number + ' ' + statusLabel.toLowerCase() + ' | Durgamma Menswear',
+    subject: 'Please confirm order ' + order.order_number + ' | Durgamma Menswear',
     text: [
       'Hello ' + body.customerName.trim() + ',',
-      'Your Durgamma Menswear Cash on Delivery order ' + order.order_number + ' has been ' + statusLabel.toLowerCase() + '.',
-      'Order total: INR ' + Number(order.total_inr).toLocaleString('en-IN') + '. Pay when your order arrives.',
-      trackingUrl ? 'Track your order: ' + trackingUrl : 'Track at ' + siteUrl + '/track using order number ' + order.order_number + ' and this checkout email.',
+      'We received your Durgamma Menswear Cash on Delivery order ' + order.order_number + '.',
+      'Order total: INR ' + Number(order.total_inr).toLocaleString('en-IN') + '.',
+      'Your order is not yet confirmed and will not be prepared until you confirm it.',
+      'Confirm your order: ' + confirmUrl,
+      'Cancel your order: ' + confirmUrl,
+      'This secure link expires in 24 hours. Choose Confirm or Cancel on the page.',
+      trackingUrl ? 'After confirmation, track your order: ' + trackingUrl : 'After confirmation, track your order at ' + siteUrl + '/track.',
       'Thank you for shopping with Durgamma Menswear.',
-    ].join('\n'),
-    html: '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Your order is ' + statusLabel.toLowerCase() + '.</h1><p>Hello ' + escapeEmailHtml(body.customerName.trim()) + ',</p><p>Your Cash on Delivery order <strong>' + escapeEmailHtml(order.order_number) + '</strong> has been ' + statusLabel.toLowerCase() + '.</p><p>Order total: <strong>INR ' + Number(order.total_inr).toLocaleString('en-IN') + '</strong>. Pay when your order arrives.</p>' +
-      (trackingUrl ? '<p><a href="' + trackingUrl + '" style="display:inline-block;padding:12px 18px;background:#b99a62;color:#fff;text-decoration:none">Track your order</a></p>' : '<p>Visit ' + escapeEmailHtml(siteUrl) + '/track and enter order number <strong>' + escapeEmailHtml(order.order_number) + '</strong> with this checkout email.</p>') +
-      '<p>Thank you for shopping with Durgamma Menswear.</p></div>',
+    ].join('\\n'),
+    html: '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Please confirm your order.</h1><p>Hello ' + escapeEmailHtml(body.customerName.trim()) + ',</p><p>We received your Cash on Delivery order <strong>' + escapeEmailHtml(order.order_number) + '</strong>.</p><p>Order total: <strong>INR ' + Number(order.total_inr).toLocaleString('en-IN') + '</strong>.</p><p><strong>Your order will not be prepared until you confirm it.</strong></p><p><a href="' + confirmUrl + '" style="display:inline-block;padding:14px 22px;background:#987b4e;color:#fff;text-decoration:none;margin-right:8px">REVIEW & CONFIRM / CANCEL</a></p><p>This secure link expires in 24 hours. On the page, choose Confirm Order or Cancel Order.</p><p>Thank you for shopping with Durgamma Menswear.</p></div>',
   });
 
   return json({
@@ -158,10 +168,11 @@ export async function POST(request: NextRequest) {
     shipping: order.shipping_inr,
     total: order.total_inr,
     paymentMethod: 'cod',
-    status: confirmationError ? 'pending' : 'confirmed',
+    status: 'pending',
+    confirmationUrl,
     trackingToken: trackingError ? null : trackingToken,
     trackingUrl,
     emailSent: emailResult.sent,
-    message: 'Your Cash on Delivery order has been placed.',
+    message: 'Your order is awaiting confirmation by email.',
   }, 201);
 }
