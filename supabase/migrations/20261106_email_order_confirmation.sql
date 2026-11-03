@@ -52,7 +52,7 @@ begin
       updated_at = now()
   where id = v_order.id;
 
-  return query select v_order.order_number, p_action || 'ed'::text,
+  return query select v_order.order_number, case when p_action = 'confirm' then 'confirmed' else 'cancelled' end,
     v_order.email, v_order.customer_name, v_order.total_inr;
 end;
 $function$;
