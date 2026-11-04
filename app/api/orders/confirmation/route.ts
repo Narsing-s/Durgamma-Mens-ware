@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
   })));
   const adminEmailsSent = adminResults.every(item => item.sent);
   const emailWarning = !customerEmail.sent
-    ? 'Your order status was saved, but the customer email could not be sent. The store needs to configure RESEND_API_KEY and ORDER_EMAIL_FROM in the hosting environment.'
+    ? (customerEmail.warning || 'Your order status was saved, but the customer email could not be sent. Check the Resend sender-domain configuration.')
     : confirmed && adminRecipients.length > 0 && !adminEmailsSent
       ? 'Your order is confirmed and the customer email was sent, but the store notification email could not be sent.'
       : undefined;

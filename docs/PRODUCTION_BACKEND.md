@@ -37,10 +37,21 @@ Copy `.env.example` to `.env.local` for local development. Configure the followi
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
 - `NEXT_PUBLIC_SITE_URL` (canonical public origin, e.g. `https://your-live-store-domain`)
 - `RESEND_API_KEY` (server-only Resend API key)
-- `ORDER_EMAIL_FROM` (sender address on a domain verified in Resend)
+- `ORDER_EMAIL_FROM` (for example, `Durgamma Menswear <orders@yourdomain.com>`; the domain must be added and show **Verified** in the same Resend account as the API key. Do not use Gmail/Outlook/Yahoo as the sender)
 - `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+
+### Resend sender-domain setup
+
+1. In Resend, open **Domains** and add a domain you own (or a sending subdomain such as `mail.yourdomain.com`).
+2. Add the exact DNS records Resend displays at your domain DNS provider. Wait until Resend reports the domain as **Verified**.
+3. Create/copy an API key in that same Resend account and set it as `RESEND_API_KEY` in the production Vercel project.
+4. Set `ORDER_EMAIL_FROM` to an address on the verified domain, such as `Durgamma Menswear <orders@mail.yourdomain.com>`. The mailbox itself need not exist, but the domain must be verified.
+5. Ensure both variables target **Production**, then redeploy. Test a new order and inspect Resend → **Emails**. Check the event status to confirm delivery or diagnose a bounce.
+6. Put the customer's address in `to`; use only the verified store domain in `from`.
+
+Checkout now returns an `emailWarning` when sending fails. Server logs record provider rejection details without exposing API keys or confirmation tokens.
 
 Set the same `NEXT_PUBLIC_SITE_URL` as the Supabase Auth Site URL and include `/account` in the allowed redirect URLs. Redeploy after changing environment variables.
 
