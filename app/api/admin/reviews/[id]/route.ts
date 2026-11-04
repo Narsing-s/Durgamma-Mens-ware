@@ -1,5 +1,5 @@
 import {NextRequest} from 'next/server';
-import {adminJson,requireAdmin} from '../../../../../../lib/admin';
+import {adminJson,requireAdmin} from '../../../../../lib/admin';
 export async function PATCH(request:NextRequest,{params}:{params:Promise<{id:string}>}){
  const auth=await requireAdmin(request);if('error' in auth)return auth.error;
  const {id}=await params;let body:Record<string,unknown>;try{body=await request.json();}catch{return adminJson({error:'Invalid request.'},400);}
