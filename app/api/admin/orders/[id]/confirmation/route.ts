@@ -13,7 +13,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
   const { id } = await params;
   const { data: order, error: loadError } = await auth.db.from('orders')
-    .select('id,order_number,customer_name,email,total_inr,order_status')
+    .select('id,order_number,customer_name,email,total_inr,order_status,confirmation_token_hash,confirmation_expires_at,confirmation_decided_at')
     .eq('id', id).maybeSingle();
 
   if (loadError || !order) return adminJson({ error: 'Order not found.' }, 404);
@@ -61,8 +61,21 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   });
 
   if (!emailResult.sent) {
+    // Preserve the previous link if the provider rejected this resend. Never
+    // invalidate a working customer link merely because an email could not send.
+    const { error: restoreError } = await auth.db.from('orders')
+      .update({
+        confirmation_token_hash: order.confirmation_token_hash,
+        confirmation_expires_at: order.confirmation_expires_at,
+        confirmation_decided_at: order.confirmation_decided_at,
+      })
+      .eq('id', id)
+      .eq('order_status', 'pending')
+      .eq('confirmation_token_hash', tokenHash);
+    if (restoreError) console.error('Could not restore previous confirmation token for order', order.order_number, restoreError.message);
+
     return adminJson({
-      error: 'The order remains pending, but Resend could not deliver the confirmation email. Check the sender configuration and Resend logs, then retry.',
+      error: 'Resend could not deliver the confirmation email. The previous confirmation link was preserved when possible. Check the sender configuration and Resend logs, then retry.',
       emailSent: false,
     }, 502);
   }
