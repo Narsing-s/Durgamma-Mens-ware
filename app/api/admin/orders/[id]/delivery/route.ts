@@ -24,17 +24,45 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const byId = await auth.db.from('orders').select(selectOrder).eq('id', id).maybeSingle();
   let order = byId.data;
   let loadError = byId.error;
+  let orderNumberFound = false;
+  let orderNumberLookupError: { code?: string; message?: string } | null = null;
   // Older admin links or cached dashboards may send the visible DMW order number
   // instead of the internal UUID. Resolve either form, then use the real UUID below.
   if (!order) {
     const byNumber = await auth.db.from('orders').select(selectOrder).eq('order_number', id).maybeSingle();
     order = byNumber.data;
+    orderNumberFound = Boolean(byNumber.data);
+    orderNumberLookupError = byNumber.error
+      ? { code: byNumber.error.code, message: byNumber.error.message }
+      : null;
     loadError = byNumber.error || loadError;
   }
   if (loadError && !order) {
     console.error('[delivery] Order lookup failed:', { code: loadError.code, message: loadError.message });
   }
-  if (!order) return adminJson({ error: 'Order not found. Refresh the admin Orders list and try again.' }, 404);
+  if (!order) {
+    // Return admin-only lookup diagnostics so a missing order can be traced to
+    // the exact database query rather than masking every failure as "not found".
+    return adminJson({
+      error: 'Order not found. The delivery API could not resolve the identifier from this Orders row.',
+      diagnostics: {
+        receivedIdentifier: id,
+        identifierLength: id.length,
+        uuidLookup: {
+          found: Boolean(byId.data),
+          errorCode: byId.error?.code || null,
+          errorMessage: byId.error?.message || null,
+        },
+        orderNumberLookup: {
+          attempted: true,
+          found: orderNumberFound,
+          errorCode: orderNumberLookupError?.code || null,
+          errorMessage: orderNumberLookupError?.message || null,
+        },
+        databaseProjectConfigured: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
+      },
+    }, 404);
+  }
   const orderId = order.id;
   if (order.order_status !== 'shipped') return adminJson({ error: 'A delivery OTP is available only for shipped orders.' }, 409);
 
