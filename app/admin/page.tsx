@@ -81,7 +81,7 @@ export default function AdminPage() {
       body: JSON.stringify({ status }),
     });
     const result = await response.json();
-    setMessage(response.ok ? (result.emailWarning || (result.emailSent === false ? 'Order updated, but notification email was not sent.' : 'Order updated successfully.')) : result.error || 'Update failed.');
+    setMessage(response.ok ? (result.message || result.emailWarning || (result.emailSent === false ? 'Order status saved, but notification email was not sent.' : 'Order updated successfully.')) : result.error || 'Update failed.');
     if (response.ok) load();
   }
 
