@@ -17,16 +17,19 @@ export async function GET(request:NextRequest,{params}:{params:Promise<{productI
 export async function POST(request:NextRequest){
  const origin=request.headers.get('origin');if(origin){try{const allowed=new Set([request.nextUrl.origin,...(process.env.NEXT_PUBLIC_SITE_URL?[new URL(process.env.NEXT_PUBLIC_SITE_URL).origin]:[])]);if(!allowed.has(new URL(origin).origin))return json({error:'Invalid request origin.'},403);}catch{return json({error:'Invalid request origin.'},403);}}
  let b:Record<string,unknown>;try{b=await request.json();}catch{return json({error:'Invalid request.'},400);}
- const orderNumber=typeof b.orderNumber==='string'?b.orderNumber.trim().toUpperCase():'',email=typeof b.email==='string'?b.email.trim().toLowerCase():'',itemId=typeof b.orderItemId==='string'?b.orderItemId:'',title=typeof b.title==='string'?b.title.trim():'',body=typeof b.body==='string'?b.body.trim():'',rating=Number(b.rating);
- if(!/^DMW-[A-Z0-9]{10}$/.test(orderNumber)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId)||!Number.isInteger(rating)||rating<1||rating>5||title.length<3||title.length>100||body.length<10||body.length>1500)return json({error:'Provide your order details, a 1–5 star rating, a short title and feedback.'},400);
+ const token=typeof b.token==='string'?b.token:'',orderNumber=typeof b.orderNumber==='string'?b.orderNumber.trim().toUpperCase():'',email=typeof b.email==='string'?b.email.trim().toLowerCase():'',itemId=typeof b.orderItemId==='string'?b.orderItemId:'',title=typeof b.title==='string'?b.title.trim():'',body=typeof b.body==='string'?b.body.trim():'',rating=Number(b.rating);
+ if((!(/^[A-Za-z0-9_-]{40,60}$/.test(token))&&(!/^DMW-[A-Z0-9]{10}$/.test(orderNumber)||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)))||!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId)||!Number.isInteger(rating)||rating<1||rating>5||title.length<3||title.length>100||body.length<10||body.length>1500)return json({error:'Provide your order details, a 1–5 star rating, a short title and feedback.'},400);
  const client=db();if(!client)return json({error:'Feedback is temporarily unavailable.'},503);
  const ip=request.headers.get('x-vercel-forwarded-for')||request.headers.get('x-forwarded-for')||'';
  const ipHash=createHash('sha256').update(ip.split(',')[0].trim()||'unknown').digest('hex');
  const {data:attempts,error:rateError}=await client.rpc('consume_tracking_rate_limit',{p_ip_hash:ipHash});
  if(rateError||typeof attempts!=='number')return json({error:'Request protection is temporarily unavailable.'},503);
  if(attempts>20)return json({error:'Too many attempts. Please try again later.'},429);
- const {data:order,error:orderError}=await client.from('orders').select('id,order_number,customer_name,order_status,delivered_at').eq('order_number',orderNumber).eq('email',email).maybeSingle();
- if(orderError||!order)return json({error:'We could not verify that order. Check the order number and checkout email.'},404);
+ const orderQuery=client.from('orders').select('id,order_number,customer_name,order_status,delivered_at');
+ const {data:order,error:orderError}=token
+  ? await orderQuery.eq('tracking_token_hash',createHash('sha256').update(token).digest('hex')).maybeSingle()
+  : await orderQuery.eq('order_number',orderNumber).ilike('email',email).maybeSingle();
+ if(orderError||!order)return json({error:'We could not verify that order. Check the order number and checkout email, or reopen your secure tracking link.'},404);
  if(order.order_status!=='delivered'||!order.delivered_at)return json({error:'Product feedback is available after delivery.'},409);
  const {data:item,error:itemError}=await client.from('order_items').select('id,product_id').eq('id',itemId).eq('order_id',order.id).maybeSingle();
  if(itemError||!item)return json({error:'That product is not part of this order.'},404);
