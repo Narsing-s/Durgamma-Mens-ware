@@ -13,7 +13,7 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Editable selling price and MRP/original price with server-side validation and automatic storefront discount display
 - Multiple size/colour variants with SKU and stock controls, including customer-facing colour selection
 - Customer order tracking by secure link or order number plus checkout email
-- Transactional order/status/delivery emails through Resend when sender credentials are configured
+- Transactional order/status/delivery emails through Brevo Free (300/day) or Resend when sender credentials are configured
 - Customer delivery OTP verification before an order can be marked delivered
 - Seven-day return/exchange requests with eligibility checks, inspection stages and auditable manual refund references
 - Admin return processing and enforced order fulfilment transitions
@@ -56,13 +56,13 @@ Deploy this Next.js application to a compatible Node.js host or a supported Next
 - Replace sample catalogue data and sample photography with accurate, store-owned product content.
 - Confirm Supabase catalogue products and variants match the displayed products and selected sizes.
 - Configure delivery serviceability, shipping rules, customer support, returns, privacy and terms.
-- Configure transactional email using `RESEND_API_KEY` and `ORDER_EMAIL_FROM` (the sender must use a domain verified in Resend); test confirmation, status, delivery-OTP and delivered emails.
+- Configure transactional email using `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY` and `ORDER_EMAIL_FROM` (the sender must be registered and its domain authenticated in Brevo); test confirmation, status, delivery-OTP and delivered emails. Resend remains available by setting `EMAIL_PROVIDER=resend` and `RESEND_API_KEY`.
 - Confirm the seven-day return policy and eligibility criteria before publishing them to customers.
 - Run the full build and checkout tests with production-like data.
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
 - Configure the owner’s Supabase Auth account and exact `STORE_ADMIN_EMAILS` allow-list, then verify owner access to product, inventory and order management before launch.
 
-The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Supabase-backed rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Carrier integration and online payments are not yet enabled. Customer tracking and operational email notifications require the new database migration and Resend sender configuration described above.
+The repository includes a working local preview bag and a live-store checkout flow. When Supabase is not configured, sample products can be added to the preview bag, but checkout is intentionally disabled; preview products are not real inventory and cannot create orders. When Supabase, the required database migrations, service-role access, Supabase-backed rate limiting and serviceable delivery PIN codes are configured, customers can place Cash on Delivery orders against live stock. The admin dashboard is protected by Supabase email/password authentication and the `STORE_ADMIN_EMAILS` allow-list. Create the owner user in Supabase Authentication → Users, enable the Email provider, and add that exact email to `STORE_ADMIN_EMAILS`. Configure the application URL and allowed redirect URLs under Authentication → URL Configuration. Carrier integration and online payments are not yet enabled. Customer tracking and operational email notifications require the new database migration and verified sender configuration for the selected email provider described above.
 
 ## Customer accounts
 

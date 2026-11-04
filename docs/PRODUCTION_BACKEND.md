@@ -36,20 +36,26 @@ Copy `.env.example` to `.env.local` for local development. Configure the followi
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
 - `NEXT_PUBLIC_SITE_URL` (canonical public origin, e.g. `https://your-live-store-domain`)
-- `RESEND_API_KEY` (server-only Resend API key)
-- `ORDER_EMAIL_FROM` (for example, `Durgamma Menswear <orders@yourdomain.com>`; the domain must be added and show **Verified** in the same Resend account as the API key. Do not use Gmail/Outlook/Yahoo as the sender)
+- `EMAIL_PROVIDER=brevo` (recommended free transactional email provider; set to `resend` only if intentionally using Resend)
+- `BREVO_API_KEY` (server-only Brevo API key; required when `EMAIL_PROVIDER=brevo`)
+- `ORDER_EMAIL_FROM` (for example, `Durgamma Menswear <orders@yourdomain.com>`; the sender domain must be authenticated/verified in the selected provider. Do not use Gmail/Outlook/Yahoo as the sender)
+- `RESEND_API_KEY` (optional server-only key retained for the `EMAIL_PROVIDER=resend` option)
 - `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
-### Resend sender-domain setup
+### Free Brevo transactional email setup (recommended)
 
-1. In Resend, open **Domains** and add a domain you own (or a sending subdomain such as `mail.yourdomain.com`).
-2. Add the exact DNS records Resend displays at your domain DNS provider. Wait until Resend reports the domain as **Verified**.
-3. Create/copy an API key in that same Resend account and set it as `RESEND_API_KEY` in the production Vercel project.
-4. Set `ORDER_EMAIL_FROM` to an address on the verified domain, such as `Durgamma Menswear <orders@mail.yourdomain.com>`. The mailbox itself need not exist, but the domain must be verified.
-5. Ensure both variables target **Production**, then redeploy. Test a new order and inspect Resend → **Emails**. Check the event status to confirm delivery or diagnose a bounce.
-6. Put the customer's address in `to`; use only the verified store domain in `from`.
+1. Create a free Brevo account at https://www.brevo.com/; the free plan currently includes 300 email sends per day and transactional email API access. Brevo may require account review/activation before transactional sending is available.
+2. In Brevo, open **Settings → Senders, Domains & Dedicated IPs** and add a sender domain you own (or a sending subdomain such as `mail.yourdomain.com`).
+3. Add the exact DNS records Brevo displays at your domain DNS provider. Complete domain authentication and register the sender address. Do not use a personal Gmail/Outlook/Yahoo address as the sender.
+4. Create a Brevo API key and set it as `BREVO_API_KEY` in the production Vercel project. Set `EMAIL_PROVIDER=brevo` and `ORDER_EMAIL_FROM` to the registered sender, such as `Durgamma Menswear <orders@mail.yourdomain.com>`.
+5. Ensure all three variables target **Production**, then redeploy. Test an order and inspect Brevo transactional email logs for accepted, delivered or bounced status.
+6. The mailbox itself need not exist for API sending, but the sender domain must be authenticated and the sender registered in Brevo.
+
+### Resend alternative
+
+Set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and `ORDER_EMAIL_FROM`. Add and verify the sender domain in the same Resend account as the API key, then redeploy. The app sends through exactly one selected provider per notification; it does not send duplicate copies through both providers.
 
 Checkout now returns an `emailWarning` when sending fails. Server logs record provider rejection details without exposing API keys or confirmation tokens.
 
@@ -83,7 +89,7 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Validate garment size charts and supplier-specific fit information.
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
-- Configure Resend and verify pending-order confirmation, customer confirmation/cancellation, order-status, delivery OTP, delivered and return/exchange notification emails. SMS and carrier integrations are not currently enabled.
+- Configure the selected transactional email provider (Brevo Free is supported; Resend remains an option) and verify pending-order confirmation, customer confirmation/cancellation, order-status, delivery OTP, delivered and return/exchange notification emails. SMS and carrier integrations are not currently enabled.
 - Use the owner-only admin dashboard to manage products, upload photos directly from a computer or phone (JPG/PNG/WebP, max 5 MB), preview selected photos, replace product photos, edit selling price and MRP, create size/colour variants, publish drafts, update stock with an audit trail, configure delivery PIN codes, and process return/exchange requests.
 - Selling price is stored in `price_inr`; optional MRP/original price is stored in `compare_at_price_inr`. The server rejects an MRP below the selling price. Keep MRP accurate and do not use an inflated reference price.
 - Customers can request a return or exchange from their private tracking link within 7 days of delivery. The database checks eligibility and prevents duplicate active requests.
@@ -94,4 +100,4 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 
 ## Honest scope boundary
 
-The repository includes customer sign-in/account screens and transactional email hooks through Resend, but it does not yet provide a consolidated customer order-history dashboard, carrier API integration, SMS delivery or live Razorpay checkout. Email sending is conditional on valid Resend credentials and a verified sender; a successful order response with `emailSent: false` means the order exists but the notification was not delivered. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
+The repository includes customer sign-in/account screens and transactional email hooks through Brevo or Resend, but it does not yet provide a consolidated customer order-history dashboard, carrier API integration, SMS delivery or live Razorpay checkout. Email sending is conditional on valid Resend credentials and a verified sender; a successful order response with `emailSent: false` means the order exists but the notification was not delivered. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
