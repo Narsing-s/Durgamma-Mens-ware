@@ -27,8 +27,27 @@ function validText(value: unknown, min: number, max: number): value is string {
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
   const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  if (origin && allowedOrigin && new URL(origin).origin !== new URL(allowedOrigin).origin) {
-    return json({ error: 'Invalid request origin.' }, 403);
+  if (origin) {
+    let receivedOrigin: string;
+    try {
+      receivedOrigin = new URL(origin).origin;
+    } catch {
+      return json({ error: 'Invalid request origin.' }, 403);
+    }
+
+    // Accept same-origin checkout requests on the active deployment, plus the
+    // explicitly configured canonical site URL (for custom-domain aliases).
+    const trustedOrigins = new Set<string>([request.nextUrl.origin]);
+    if (allowedOrigin) {
+      try {
+        trustedOrigins.add(new URL(allowedOrigin).origin);
+      } catch {
+        console.error('NEXT_PUBLIC_SITE_URL is not a valid URL.');
+      }
+    }
+    if (!trustedOrigins.has(receivedOrigin)) {
+      return json({ error: 'Invalid request origin.' }, 403);
+    }
   }
   const contentLength = Number(request.headers.get('content-length') || 0);
   if (contentLength > 16_000) return json({ error: 'Request is too large.' }, 413);
