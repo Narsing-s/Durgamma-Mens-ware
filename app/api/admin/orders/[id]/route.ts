@@ -59,7 +59,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       try { const parsed = new URL(trackingUrl); if (!['http:', 'https:'].includes(parsed.protocol)) throw new Error('invalid'); }
       catch { return adminJson({ error: 'Enter a valid http:// or https:// courier tracking URL.' }, 400); }
     }
-    if (expectedDeliveryDate && (!/^\\d{4}-\\d{2}-\\d{2}$/.test(expectedDeliveryDate) || Number.isNaN(Date.parse(expectedDeliveryDate + 'T00:00:00Z')))) {
+    if (expectedDeliveryDate && (!/^\d{4}-\d{2}-\d{2}$/.test(expectedDeliveryDate) || Number.isNaN(Date.parse(expectedDeliveryDate + 'T00:00:00Z')))) {
       return adminJson({ error: 'Expected delivery date must use YYYY-MM-DD.' }, 400);
     }
     shipment = { shipping_provider: shippingProvider, tracking_number: trackingNumber, tracking_url: trackingUrl || null, expected_delivery_date: expectedDeliveryDate || null };
