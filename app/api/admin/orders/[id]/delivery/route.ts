@@ -20,10 +20,22 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   let body: { action?: string; otp?: string };
   try { body = await request.json(); } catch { return adminJson({ error: 'Invalid request.' }, 400); }
 
-  const { data: order, error: loadError } = await auth.db.from('orders')
-    .select('id,order_number,customer_name,email,order_status,delivery_otp_hash,delivery_otp_expires_at')
-    .eq('id', id).maybeSingle();
-  if (loadError || !order) return adminJson({ error: 'Order not found.' }, 404);
+  const selectOrder = 'id,order_number,customer_name,email,order_status,delivery_otp_hash,delivery_otp_expires_at';
+  const byId = await auth.db.from('orders').select(selectOrder).eq('id', id).maybeSingle();
+  let order = byId.data;
+  let loadError = byId.error;
+  // Older admin links or cached dashboards may send the visible DMW order number
+  // instead of the internal UUID. Resolve either form, then use the real UUID below.
+  if (!order) {
+    const byNumber = await auth.db.from('orders').select(selectOrder).eq('order_number', id).maybeSingle();
+    order = byNumber.data;
+    loadError = byNumber.error || loadError;
+  }
+  if (loadError && !order) {
+    console.error('[delivery] Order lookup failed:', { code: loadError.code, message: loadError.message });
+  }
+  if (!order) return adminJson({ error: 'Order not found. Refresh the admin Orders list and try again.' }, 404);
+  const orderId = order.id;
   if (order.order_status !== 'shipped') return adminJson({ error: 'A delivery OTP is available only for shipped orders.' }, 409);
 
   const baseUrl = getPublicSiteUrl(request.nextUrl.origin);
@@ -32,9 +44,9 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const otp = String(randomInt(100000, 1000000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const { error } = await auth.db.from('orders').update({
-      delivery_otp_hash: hashOtp(id, otp),
+      delivery_otp_hash: hashOtp(orderId, otp),
       delivery_otp_expires_at: expires,
-    }).eq('id', id);
+    }).eq('id', orderId);
     if (error) return adminJson({ error: 'Could not generate a delivery OTP.' }, 500);
     const result = await notify(order, 'Your delivery OTP · ' + order.order_number,
       'Your delivery OTP is ' + otp + '. Share it with the delivery agent only when your parcel is physically delivered. It expires in 15 minutes. Track: ' + baseUrl + '/track',
@@ -43,7 +55,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       // Do not leave an active OTP that the customer never received.
       const { error: clearError } = await auth.db.from('orders')
         .update({ delivery_otp_hash: null, delivery_otp_expires_at: null })
-        .eq('id', id).eq('delivery_otp_hash', hashOtp(id, otp));
+        .eq('id', orderId).eq('delivery_otp_hash', hashOtp(orderId, otp));
       if (clearError) console.error('Could not clear undelivered delivery OTP for order:', order.order_number);
       return adminJson({
         ok: false,
@@ -63,7 +75,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     return adminJson({ error: 'The delivery OTP has expired or has not been sent. Resend a new OTP.' }, 409);
   }
 
-  const supplied = Buffer.from(hashOtp(id, body.otp!), 'hex');
+  const supplied = Buffer.from(hashOtp(orderId, body.otp!), 'hex');
   const stored = Buffer.from(order.delivery_otp_hash, 'hex');
   if (supplied.length !== stored.length || !timingSafeEqual(supplied, stored)) {
     return adminJson({ error: 'The delivery OTP is incorrect. Please check with the customer.' }, 401);
@@ -72,12 +84,12 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   // Consume the code atomically so it cannot be reused by another delivery attempt.
   const { data: consumed, error: consumeError } = await auth.db.from('orders')
     .update({ delivery_otp_hash: null, delivery_otp_expires_at: null })
-    .eq('id', id).eq('delivery_otp_hash', order.delivery_otp_hash)
+    .eq('id', orderId).eq('delivery_otp_hash', order.delivery_otp_hash)
     .gt('delivery_otp_expires_at', new Date().toISOString()).select('id').maybeSingle();
   if (consumeError || !consumed) return adminJson({ error: 'OTP expired or already used. Send a new OTP.' }, 409);
 
   const { data, error } = await auth.db.rpc('set_store_order_status', {
-    p_order_id: id,
+    p_order_id: orderId,
     p_status: 'delivered',
     p_note: 'Delivery completed after successful customer OTP verification.',
   });
