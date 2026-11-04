@@ -1,8 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import AdminEntry from '../components/AdminEntry';
+import { getPublicSiteUrl } from '../lib/site-url';
 import './globals.css';
 export const metadata: Metadata = {
-  metadataBase: new URL('https://durgamma-menswear.vercel.app'),
+  metadataBase: new URL(getPublicSiteUrl()),
   title: { default: 'Durgamma Menswear | Defined by Style', template: '%s | Durgamma Menswear' },
   description: 'Discover the Durgamma Menswear edit: considered shirts, tees, denim and everyday essentials. Modern fits, timeless confidence.',
   applicationName: 'Durgamma Menswear',
