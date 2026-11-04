@@ -115,7 +115,9 @@ export default function TrackOrder() {
     }
     setReviewBusy(true);
     try {
-      const response = await fetch('/api/products/reviews/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderNumber:order.orderNumber,email:checkoutEmail.trim(),orderItemId:reviewItem,rating:reviewRating,title:reviewTitle.trim(),body:reviewBody.trim()}) });
+      let suppliedToken=token.trim();
+      try { if(suppliedToken.startsWith('http://')||suppliedToken.startsWith('https://')) suppliedToken=new URL(suppliedToken).searchParams.get('token')||''; } catch { suppliedToken=''; }
+      const response = await fetch('/api/products/reviews/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:/^[A-Za-z0-9_-]{40,60}$/.test(suppliedToken)?suppliedToken:undefined,orderNumber:order.orderNumber,email:checkoutEmail.trim(),orderItemId:reviewItem,rating:reviewRating,title:reviewTitle.trim(),body:reviewBody.trim()}) });
       const result=await response.json();
       if(!response.ok) throw new Error(result.error || 'Could not submit feedback.');
       setReviewMessage(result.message || 'Thank you for your feedback.'); setReviewTitle(''); setReviewBody('');

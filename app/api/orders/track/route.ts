@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
   if (limit === 'unavailable') return json({ error: 'Order tracking protection is temporarily unavailable. Please try again later.' }, 503);
 
   const { data, error } = await db.from('orders').select(orderSelect)
-    .eq('order_number', orderNumber).eq('email', email).maybeSingle();
+    .eq('order_number', orderNumber).ilike('email', email).maybeSingle();
   if (error) {
     console.error('[order-tracking] Order-number lookup failed:', error.message, error.code);
     return json({ error: 'We could not retrieve this order right now.' }, 503);
