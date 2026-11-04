@@ -43,21 +43,37 @@ export async function POST(request: NextRequest) {
 
   const confirmed = body.action === 'confirm';
   const statusText = confirmed ? 'confirmed' : 'cancelled';
-  await sendStoreEmail({
+  const customerEmail = await sendStoreEmail({
     to: result.customer_email,
     subject: 'Order ' + result.order_number + ' ' + statusText + ' | Durgamma Menswear',
-    text: 'Hello ' + result.customer_name + ',\\nYour order ' + result.order_number + ' has been ' + statusText + '.\\nOrder total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '.',
-    html: '<div style="font-family:Arial,sans-serif;color:#202020"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Your order is ' + statusText + '.</h1><p>Hello ' + escapeEmailHtml(result.customer_name) + ',</p><p>Order <strong>' + escapeEmailHtml(result.order_number) + '</strong> has been ' + statusText + '.</p><p>Total: <strong>INR ' + Number(result.total_inr).toLocaleString('en-IN') + '</strong>.</p></div>',
+    text: 'Hello ' + result.customer_name + ',\nYour order ' + result.order_number + ' has been ' + statusText + '.\nOrder total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '.\n' +
+      (confirmed ? 'The store can now prepare your order. We will email you as it moves through packing, dispatch and delivery.' : 'Your order has been cancelled and reserved stock has been released.'),
+    html: '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Your order is ' + statusText + '.</h1><p>Hello ' + escapeEmailHtml(result.customer_name) + ',</p><p>Order <strong>' + escapeEmailHtml(result.order_number) + '</strong> has been ' + statusText + '.</p><p>Total: <strong>INR ' + Number(result.total_inr).toLocaleString('en-IN') + '</strong>.</p><p>' +
+      (confirmed ? 'The store can now prepare your order. We will email you as it moves through packing, dispatch and delivery.' : 'Your order has been cancelled and reserved stock has been released.') +
+      '</p></div>',
   });
 
-  if (confirmed) {
-    const adminRecipients = (process.env.STORE_ADMIN_EMAILS || '').split(',').map(value => value.trim()).filter(Boolean);
-    await Promise.all(adminRecipients.map(to => sendStoreEmail({
-      to,
-      subject: 'Customer confirmed order ' + result.order_number + ' | Durgamma Menswear',
-      text: 'Customer ' + result.customer_name + ' confirmed order ' + result.order_number + '. Total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '. The order is ready for store fulfilment.',
-      html: '<div style="font-family:Arial,sans-serif"><h2>Order ready for fulfilment</h2><p>Customer ' + escapeEmailHtml(result.customer_name) + ' confirmed order <strong>' + escapeEmailHtml(result.order_number) + '</strong>.</p><p>Total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '</p></div>',
-    })));
-  }
-  return NextResponse.json({ ok: true, orderNumber: result.order_number, status: confirmed ? 'confirmed' : 'cancelled' }, { headers: { 'Cache-Control': 'no-store' } });
+  const adminRecipients = confirmed
+    ? (process.env.STORE_ADMIN_EMAILS || '').split(',').map(value => value.trim()).filter(Boolean)
+    : [];
+  const adminResults = await Promise.all(adminRecipients.map(to => sendStoreEmail({
+    to,
+    subject: 'Customer confirmed order ' + result.order_number + ' | Durgamma Menswear',
+    text: 'Customer ' + result.customer_name + ' confirmed order ' + result.order_number + '. Total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '. The order is ready for store fulfilment.',
+    html: '<div style="font-family:Arial,sans-serif"><h2>Order ready for fulfilment</h2><p>Customer ' + escapeEmailHtml(result.customer_name) + ' confirmed order <strong>' + escapeEmailHtml(result.order_number) + '</strong>.</p><p>Total: INR ' + Number(result.total_inr).toLocaleString('en-IN') + '</p></div>',
+  })));
+  const adminEmailsSent = adminResults.every(item => item.sent);
+  const emailWarning = !customerEmail.sent
+    ? 'Your order status was saved, but the customer email could not be sent. The store needs to configure RESEND_API_KEY and ORDER_EMAIL_FROM in the hosting environment.'
+    : confirmed && adminRecipients.length > 0 && !adminEmailsSent
+      ? 'Your order is confirmed and the customer email was sent, but the store notification email could not be sent.'
+      : undefined;
+
+  return NextResponse.json({
+    ok: true,
+    orderNumber: result.order_number,
+    status: confirmed ? 'confirmed' : 'cancelled',
+    emailSent: customerEmail.sent,
+    emailWarning,
+  }, { headers: { 'Cache-Control': 'no-store' } });
 }
