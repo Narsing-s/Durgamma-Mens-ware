@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     { table: 'orders', error: orders.error },
     { table: 'return_requests', error: returns.error },
     { table: 'product_variants', error: lowStock.error },
-    { table: 'product_reviews', error: reviews.error },
+    { table: 'product_reviews', error: reviews.error?.code === '42P01' ? null : reviews.error },
   ].filter(item => Boolean(item.error));
   if (failures.length) {
     for (const failure of failures) {
