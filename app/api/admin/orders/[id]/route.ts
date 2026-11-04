@@ -2,14 +2,15 @@ import { NextRequest } from 'next/server';
 import { createHmac, randomInt } from 'node:crypto';
 import { adminJson, requireAdmin } from '../../../../../lib/admin';
 import { sendStoreEmail, escapeEmailHtml } from '../../../../../lib/order-email';
+import { getPublicSiteUrl } from '../../../../../lib/site-url';
 
 function otpHash(orderId: string, otp: string): string {
   const secret = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
   return createHmac('sha256', secret).update(orderId + ':' + otp).digest('hex');
 }
 
-async function sendStatusEmail(order: any, status: string, otp?: string) {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://durgamma-mens-ware.vercel.app').replace(/\/$/, '');
+async function sendStatusEmail(order: any, status: string, requestOrigin: string, otp?: string) {
+  const baseUrl = getPublicSiteUrl(requestOrigin);
   const labels: Record<string, string> = {
     confirmed: 'confirmed',
     packed: 'being processed, packed and prepared for dispatch',
@@ -60,11 +61,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (otpError) return adminJson({ ok: true, result: data, emailSent: false, warning: 'Order shipped, but delivery OTP could not be saved. Check the database before retrying.' });
   }
 
-  const emailResult = await sendStatusEmail(existingOrder, body.status, otp);
+  const emailResult = await sendStatusEmail(existingOrder, body.status, request.nextUrl.origin, otp);
   return adminJson({
     ok: true,
     result: data,
     emailSent: emailResult.sent,
-    emailWarning: emailResult.sent ? undefined : 'Order status was saved, but email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in your Vercel project environment variables, then redeploy.',
+    emailWarning: emailResult.sent ? undefined : 'Order status was saved, but email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in your hosting environment, then redeploy.',
   });
 }
