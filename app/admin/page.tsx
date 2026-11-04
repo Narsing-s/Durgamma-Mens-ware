@@ -180,7 +180,8 @@ export default function AdminPage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok || result.ok === false) {
         const detail = result.error || result.warning || `Delivery action failed (HTTP ${response.status}).`;
-        setMessage(detail + (result.emailReason ? ' [Email: ' + result.emailReason + ']' : ''));
+        const lookupDetails = result.diagnostics ? ' [Lookup diagnostics: ' + JSON.stringify(result.diagnostics) + ']' : '';
+        setMessage(detail + (result.emailReason ? ' [Email: ' + result.emailReason + ']' : '') + lookupDetails);
         return;
       }
       if (action === 'resend') {
