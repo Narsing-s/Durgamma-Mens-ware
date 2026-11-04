@@ -21,7 +21,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   try { body = await request.json(); } catch { return adminJson({ error: 'Invalid request.' }, 400); }
 
   const selectOrder = 'id,order_number,customer_name,email,order_status,delivery_otp_hash,delivery_otp_expires_at';
-  const byId = await auth.db.from('orders').select(selectOrder).eq('id', orderId).maybeSingle();
+  const byId = await auth.db.from('orders').select(selectOrder).eq('id', id).maybeSingle();
   let order = byId.data;
   let loadError = byId.error;
   // Older admin links or cached dashboards may send the visible DMW order number
