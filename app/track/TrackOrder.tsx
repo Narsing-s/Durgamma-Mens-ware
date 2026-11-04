@@ -11,6 +11,10 @@ type Order = {
   createdAt: string;
   updatedAt: string;
   deliveredAt?: string | null;
+  shippingProvider?: string | null;
+  trackingNumber?: string | null;
+  trackingUrl?: string | null;
+  expectedDeliveryDate?: string | null;
   returnRequest?: { id: string; status: string; request_type: string; created_at: string; order_item_id?: string | null; order_items?: { product_name: string; size: string; quantity: number } | null; refund_reference?: string | null; refund_method?: string | null; refund_amount_inr?: number | null } | null;
   items: { id: string; product_name: string; size: string; quantity: number; line_total_inr: number }[];
   statusHistory?: { status: string; note: string; created_at: string }[];
@@ -122,6 +126,14 @@ export default function TrackOrder() {
       {order && <section className="track-result" aria-live="polite">
         <div className="track-result-head"><div><span>ORDER NUMBER</span><h2>{order.orderNumber}</h2></div><span className={'track-status '+(cancelled?'cancelled':'')}>{order.status.replace('_',' ').toUpperCase()}</span></div>
         <p className="track-placed">Placed {date(order.createdAt)}</p>
+        {order.status === 'shipped' && (order.shippingProvider || order.trackingNumber) && <section className="track-items" aria-label="Courier tracking details">
+          <h3>SHIPMENT DETAILS</h3>
+          <div className="track-item"><span>Courier partner</span><b>{order.shippingProvider || 'Not provided'}</b></div>
+          <div className="track-item"><span>AWB / Tracking number</span><b>{order.trackingNumber || 'Not provided'}</b></div>
+          {order.expectedDeliveryDate && <div className="track-item"><span>Expected delivery</span><b>{new Date(order.expectedDeliveryDate + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</b></div>}
+          {order.trackingUrl && <p><a href={order.trackingUrl} target="_blank" rel="noopener noreferrer">Track parcel with courier ↗</a></p>}
+          <p className="track-payment">Delivery is completed only after the customer shares the delivery OTP with the store delivery agent.</p>
+        </section>}
         {cancelled ? <div className="track-cancelled"><Clock3 size={20}/><div><b>Order cancelled</b><p>This order is no longer being processed. Contact the store if you need help.</p></div></div> : <div className="track-timeline">
           {steps.map((step,index) => {
             const Icon = step.icon;

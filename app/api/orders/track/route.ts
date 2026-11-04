@@ -45,6 +45,10 @@ function publicOrder(data: any) {
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     deliveredAt: data.delivered_at,
+    shippingProvider: data.shipping_provider,
+    trackingNumber: data.tracking_number,
+    trackingUrl: data.tracking_url,
+    expectedDeliveryDate: data.expected_delivery_date,
     returnRequest: latestReturn,
     statusHistory: (data.order_status_events || []).sort((a: any, b: any) =>
       new Date(a.created_at).getTime() - new Date(b.created_at).getTime()),
@@ -54,7 +58,7 @@ function publicOrder(data: any) {
 
 // return_requests.order_item_id is a plain UUID column in the deployed schema,
 // not a declared foreign key. Do not ask PostgREST to embed order_items through it.
-const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,order_items(id,product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,order_item_id,refund_reference,refund_method,refund_amount_inr),order_status_events(status,note,created_at)';
+const orderSelect = 'id,order_number,order_status,payment_status,total_inr,created_at,updated_at,delivered_at,shipping_provider,tracking_number,tracking_url,expected_delivery_date,order_items(id,product_name,size,quantity,line_total_inr),return_requests(id,status,request_type,created_at,updated_at,order_item_id,refund_reference,refund_method,refund_amount_inr),order_status_events(status,note,created_at)';
 
 export async function GET(request: NextRequest) {
   const token = request.nextUrl.searchParams.get('token') || '';
