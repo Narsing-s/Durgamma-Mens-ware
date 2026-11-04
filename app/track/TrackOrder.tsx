@@ -136,6 +136,8 @@ export default function TrackOrder() {
       <p className="eyebrow">DURGAMMA MENSWEAR · ORDER CARE</p>
       <h1>Track your <em>order.</em></h1>
       <p className="track-intro">Track securely with your order number and checkout email, or use the private link from your confirmation email.</p>
+      <nav className="track-care-shortcuts" aria-label="Order care shortcuts"><a href="#customer-care">RETURNS &amp; EXCHANGES</a><a href="#customer-care">PRODUCT FEEDBACK</a></nav>
+      <p className="track-care-note">After delivery, look up your order here to submit a return or exchange within 7 days, or share product feedback. Both forms appear below your order summary.</p>
       <form className="track-form" onSubmit={submit}>
         <label htmlFor="tracking-token">ORDER NUMBER OR SECURE TRACKING LINK</label>
         <div><input id="tracking-token" value={token} onChange={event => setToken(event.target.value)} placeholder="DMW-XXXXXXXXXX or paste tracking link" autoComplete="off" spellCheck={false}/></div>
@@ -167,7 +169,7 @@ export default function TrackOrder() {
           })}
         </div>}
         <div className="track-items"><h3>ORDER SUMMARY</h3>{order.items.map((item,index)=><div className="track-item" key={index}><span>{item.product_name}<small>Size {item.size} · Qty {item.quantity}</small></span><b>{money(item.line_total_inr)}</b></div>)}<div className="track-total"><span>Order total</span><b>{money(order.total)}</b></div><p className="track-payment">Payment status: {order.paymentStatus.replace('_',' ').toUpperCase()}</p></div>
-        {order.status === "delivered" && <section className="track-return-panel">
+        {order.status === "delivered" && <section className="track-return-panel" id="customer-care">
           <h3>RETURN OR EXCHANGE</h3>
           {order.returnRequest && order.returnRequest.status !== "rejected" ? <p>Existing {order.returnRequest.request_type} request for {order.returnRequest.order_items?.product_name || 'the selected product'}: <b>{order.returnRequest.status.toUpperCase()}</b>. The store team will update this request as it is processed. {order.returnRequest.refund_reference ? 'Refund reference: ' + order.returnRequest.refund_reference + '.' : ''}</p> : order.deliveredAt && Date.now() >= new Date(order.deliveredAt).getTime() && Date.now() - new Date(order.deliveredAt).getTime() <= 7 * 24 * 60 * 60 * 1000 ? returnSubmitted ? <p>Your request has been received. The store team will review it.</p> : <>
             <p>Request a return or exchange for an individual product within 7 calendar days of delivery. Items must be unused, unwashed, unaltered and undamaged, with original tags and packaging. Requests are reviewed after the item is received and inspected. Refunds are recorded only after the store has actually issued the payment; COD refunds are handled manually.</p>
