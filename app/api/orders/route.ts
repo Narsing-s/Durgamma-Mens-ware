@@ -199,6 +199,9 @@ export async function POST(request: NextRequest) {
     trackingToken: trackingError ? null : trackingToken,
     trackingUrl,
     emailSent: emailResult.sent,
-    message: 'Your order is awaiting confirmation by email.',
+    emailWarning: emailResult.warning,
+    message: emailResult.sent
+      ? 'Your order is awaiting confirmation. The confirmation email was accepted by the email provider.'
+      : 'Your order was saved, but the confirmation email was not sent. ' + (emailResult.warning || 'Please contact the store.'),
   }, 201);
 }
