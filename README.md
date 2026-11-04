@@ -45,7 +45,7 @@ Open http://localhost:3000.
 4. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and the server-only `SUPABASE_SERVICE_ROLE_KEY` in your hosting environment. Never expose the service-role key to the browser or commit credentials.
 5. Checkout and customer tracking/return endpoints use Supabase-backed rate limiting; apply the corresponding database migrations before accepting live traffic.
 
-Apply the [secure order tracking migration](supabase/migrations/20261031_secure_order_tracking.sql), the real-store operations, inventory audit, PIN shipping, product media/returns, rate-limit and [delivery OTP/refund migration](supabase/migrations/20261105_delivery_otp_and_refunds.sql) in dependency order. The latest migration adds expiring delivery OTPs, tracking rate limits and refund audit fields. Run it in Supabase SQL Editor before deploying this branch. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for full migration and launch requirements.
+Apply the secure order tracking migration, the real-store operations, inventory audit, PIN shipping, product media/returns, rate-limit, delivery OTP/refund, and [customer email order-confirmation migration](supabase/migrations/20261106_email_order_confirmation.sql) in dependency order. The delivery migration adds expiring delivery OTPs, tracking rate limits and refund audit fields. The email-confirmation migration adds expiring, single-use confirmation tokens and the secure pending → confirmed/cancelled database transition. Apply each migration once in Supabase SQL Editor and check the existing migration history first. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for the complete launch checklist.
 
 ## Deployment
 
@@ -70,9 +70,9 @@ The storefront includes a customer account page at `/account` with email/passwor
 
 Before enabling customer accounts in production:
 
-1. In Supabase Dashboard → Authentication → URL Configuration, set the Site URL to `https://durgamma-mens-ware.vercel.app`.
-2. Add `https://durgamma-mens-ware.vercel.app/account` to the Redirect URLs allowlist. For local development, also add `http://localhost:3000/account`.
-3. In Vercel, ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured for the deployment.
+1. Set `NEXT_PUBLIC_SITE_URL` to the exact public storefront origin (for example, your active Vercel or Netlify custom/deployment domain).
+2. In Supabase Dashboard → Authentication → URL Configuration, set the Site URL to that same origin and add `<NEXT_PUBLIC_SITE_URL>/account` to the Redirect URLs allowlist. For local development, also add `http://localhost:3000/account`.
+3. In the hosting provider that serves the live storefront, ensure `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are configured.
 4. Configure Supabase email templates and SMTP delivery if you want reliable production confirmation and password-reset emails.
 
 Customer sign-up may require email confirmation depending on the Supabase Auth settings. The existing `STORE_ADMIN_EMAILS` allowlist remains separate: creating a customer account does not grant store-admin access.
