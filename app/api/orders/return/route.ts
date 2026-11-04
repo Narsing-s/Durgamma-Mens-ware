@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createHash, randomBytes } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 import { sendStoreEmail, escapeEmailHtml } from '../../../../lib/order-email';
+import { getPublicSiteUrl } from '../../../../lib/site-url';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -22,9 +23,15 @@ export async function POST(request: NextRequest) {
   const contentLength = Number(request.headers.get('content-length') || 0);
   if (contentLength > 8_000) return json({ error: 'Request is too large.' }, 413);
   const origin = request.headers.get('origin');
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
-  if (origin && siteUrl && new URL(origin).origin !== new URL(siteUrl).origin) {
-    return json({ error: 'Invalid request origin.' }, 403);
+  if (origin) {
+    try {
+      const receivedOrigin = new URL(origin).origin;
+      const trustedOrigins = new Set<string>([request.nextUrl.origin]);
+      if (process.env.NEXT_PUBLIC_SITE_URL) trustedOrigins.add(new URL(process.env.NEXT_PUBLIC_SITE_URL).origin);
+      if (!trustedOrigins.has(receivedOrigin)) return json({ error: 'Invalid request origin.' }, 403);
+    } catch {
+      return json({ error: 'Invalid request origin.' }, 403);
+    }
   }
 
   let body: Record<string, unknown>;
@@ -101,7 +108,7 @@ export async function POST(request: NextRequest) {
   }
 
   const result = Array.isArray(data) ? data[0] : data;
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin).replace(/\/$/, '');
+  const baseUrl = getPublicSiteUrl(request.nextUrl.origin);
   const emailResult = await sendStoreEmail({
     to: order.email,
     subject: 'We received your ' + requestType + ' request for order ' + order.order_number,

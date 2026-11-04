@@ -8,9 +8,15 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   const origin = request.headers.get('origin');
-  const allowedOrigin = process.env.NEXT_PUBLIC_SITE_URL;
-  if (origin && allowedOrigin && new URL(origin).origin !== new URL(allowedOrigin).origin) {
-    return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
+  if (origin) {
+    try {
+      const receivedOrigin = new URL(origin).origin;
+      const trustedOrigins = new Set<string>([request.nextUrl.origin]);
+      if (process.env.NEXT_PUBLIC_SITE_URL) trustedOrigins.add(new URL(process.env.NEXT_PUBLIC_SITE_URL).origin);
+      if (!trustedOrigins.has(receivedOrigin)) return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
+    } catch {
+      return NextResponse.json({ error: 'Invalid request origin.' }, { status: 403 });
+    }
   }
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch {
