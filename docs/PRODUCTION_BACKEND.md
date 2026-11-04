@@ -35,33 +35,36 @@ Copy `.env.example` to `.env.local` for local development. Configure the followi
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
-- `NEXT_PUBLIC_SITE_URL` (canonical public origin, e.g. `https://your-live-store-domain`)
-- `EMAIL_PROVIDER=brevo` (recommended free transactional email provider; set to `resend` only if intentionally using Resend)
-- `BREVO_API_KEY` (server-only Brevo API key; required when `EMAIL_PROVIDER=brevo`)
-- `ORDER_EMAIL_FROM` (for example, `Durgamma Menswear <orders@yourdomain.com>`; the sender domain must be authenticated/verified in the selected provider. Do not use Gmail/Outlook/Yahoo as the sender)
-- `RESEND_API_KEY` (optional server-only key retained for the `EMAIL_PROVIDER=resend` option)
-- `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
+- `NEXT_PUBLIC_SITE_URL` (canonical public origin)
+- `EMAIL_PROVIDER=gmail` (recommended for a zero-budget launch; `brevo` and `resend` remain optional alternatives)
+- `GMAIL_USER` (the Gmail account that sends store notifications)
+- `GMAIL_APP_PASSWORD` (Google App Password; server-only; never use your normal Gmail password)
+- `ORDER_EMAIL_FROM` (optional display name and the same Gmail address, e.g. `Durgamma Menswear <store@gmail.com>`)
+- `BREVO_API_KEY` and `RESEND_API_KEY` (optional; not needed for Gmail)
+- `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
 
-### Free Brevo transactional email setup (recommended)
+### Free Gmail SMTP setup (recommended for a zero-budget launch)
 
-1. Create a free Brevo account at https://www.brevo.com/; the free plan currently includes 300 email sends per day and transactional email API access. Brevo may require account review/activation before transactional sending is available.
-2. In Brevo, open **Settings → Senders, Domains & Dedicated IPs** and add a sender domain you own (or a sending subdomain such as `mail.yourdomain.com`).
-3. Add the exact DNS records Brevo displays at your domain DNS provider. Complete domain authentication and register the sender address. Do not use a personal Gmail/Outlook/Yahoo address as the sender.
-4. Create a Brevo API key and set it as `BREVO_API_KEY` in the production Vercel project. Set `EMAIL_PROVIDER=brevo` and `ORDER_EMAIL_FROM` to the registered sender, such as `Durgamma Menswear <orders@mail.yourdomain.com>`.
-5. Ensure all three variables target **Production**, then redeploy. Test an order and inspect Brevo transactional email logs for accepted, delivered or bounced status.
-6. The mailbox itself need not exist for API sending, but the sender domain must be authenticated and the sender registered in Brevo.
+1. Use the Gmail account you want customers to receive store notifications from.
+2. Enable **2-Step Verification** in that Google Account.
+3. Open Google's [App passwords](https://myaccount.google.com/apppasswords) page and create an app password for the store. Google may not show this option for some managed or Advanced Protection accounts.
+4. In Vercel → Project → Settings → Environment Variables, add `EMAIL_PROVIDER=gmail`, `GMAIL_USER` (your Gmail address), and `GMAIL_APP_PASSWORD` (the generated 16-character app password). Optionally set `ORDER_EMAIL_FROM` to `Durgamma Menswear <same-gmail-address>`.
+5. Set the variables for **Production** and redeploy. Never paste the app password into GitHub, source code, or chat.
+6. Place a low-value test order using an email address you can access. Check inbox, spam and Vercel function logs.
 
-### Resend alternative
+The Gmail implementation uses authenticated SMTP over TLS and is shared by the existing order email hooks, so it covers checkout confirmation and other lifecycle notifications that already call `sendStoreEmail`. It requires no custom domain or paid email-provider account. Gmail has account sending limits and anti-abuse restrictions; it is suitable for low-volume startup use, not guaranteed bulk mail.
 
-Set `EMAIL_PROVIDER=resend`, `RESEND_API_KEY` and `ORDER_EMAIL_FROM`. Add and verify the sender domain in the same Resend account as the API key, then redeploy. The app sends through exactly one selected provider per notification; it does not send duplicate copies through both providers.
+### Brevo / Resend alternatives
 
-Checkout now returns an `emailWarning` when sending fails. Server logs record provider rejection details without exposing API keys or confirmation tokens.
+If you later own a domain, you can switch `EMAIL_PROVIDER` to `brevo` or `resend`, configure that provider's API key and set `ORDER_EMAIL_FROM` to a sender on the authenticated domain. Exactly one provider is used per notification; do not configure multiple providers expecting automatic fallback.
+
+Checkout returns an `emailWarning` when sending fails. Server logs record provider rejection details without exposing API keys or confirmation tokens.
 
 Set the same `NEXT_PUBLIC_SITE_URL` as the Supabase Auth Site URL and include `/account` in the allowed redirect URLs. Redeploy after changing environment variables.
 
-Razorpay variables are reserved for the later payment activation:
+Razorpay variables are reserved for later payment activation:
 
 - `RAZORPAY_KEY_ID`
 - `RAZORPAY_KEY_SECRET`
@@ -100,4 +103,4 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 
 ## Honest scope boundary
 
-The repository includes customer sign-in/account screens and transactional email hooks through Brevo or Resend, but it does not yet provide a consolidated customer order-history dashboard, carrier API integration, SMS delivery or live Razorpay checkout. Email sending is conditional on valid Resend credentials and a verified sender; a successful order response with `emailSent: false` means the order exists but the notification was not delivered. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
+The repository includes customer sign-in/account screens and transactional email hooks through Gmail SMTP, Brevo or Resend, but it does not yet provide a consolidated customer order-history dashboard, carrier API integration, SMS delivery or live Razorpay checkout. Email sending is conditional on valid Gmail App Password/SMTP access (or credentials for a domain-authenticated provider); a successful order response with `emailSent: false` means the order exists but the notification was not delivered. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.

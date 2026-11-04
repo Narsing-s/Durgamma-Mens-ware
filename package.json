@@ -16,7 +16,8 @@
     "react-dom": "^19.0.0",
     "typescript": "^5.7.2",
     "lucide-react": "^0.468.0",
-    "@supabase/supabase-js": "^2.57.0"
+    "@supabase/supabase-js": "^2.57.0",
+    "nodemailer": "^7.0.10"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.20",
