@@ -250,6 +250,14 @@ export default function AdminPage() {
         <h1>Store control centre</h1>
         <small>{user.email}</small>
       </div>
+      <nav className="admin-top-nav" aria-label="Store administration sections">
+        <a href="#orders">Orders</a>
+        <a className="admin-top-nav-returns" href="#returns">Returns &amp; exchanges <span>{data?.returns.filter(item => item.status === 'requested').length || 0} new</span></a>
+        <a href="#product-feedback">Product feedback</a>
+        <a href="#inventory">Inventory</a>
+        <a href="#reports">Reports</a>
+        <Link href="/admin/products">Products</Link>
+      </nav>
       <div><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
     </header>
     {message && <p className="admin-message" role="status">{message}</p>}
