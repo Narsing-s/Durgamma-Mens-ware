@@ -45,7 +45,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
   const { id } = await params;
   const orderSelect = 'id,order_number,customer_name,email,total_inr,order_status,shipping_provider,tracking_number,tracking_url,expected_delivery_date';
-  const byId = await auth.db.from('orders').select(orderSelect).eq('id', orderId).maybeSingle();
+  const byId = await auth.db.from('orders').select(orderSelect).eq('id', id).maybeSingle();
   let existingOrder = byId.data;
   let existingOrderError = byId.error;
   // Accept both the internal UUID and the customer-facing DMW order number.
