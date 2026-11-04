@@ -9,14 +9,14 @@ function otpHash(orderId: string, otp: string): string {
 }
 
 async function sendStatusEmail(order: any, status: string, otp?: string) {
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://durgamma-mensware.netlify.app').replace(/\/$/, '');
+  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://durgamma-mens-ware.vercel.app').replace(/\/$/, '');
   const labels: Record<string, string> = {
     confirmed: 'confirmed',
-    packed: 'packed and ready for dispatch',
+    packed: 'being processed, packed and prepared for dispatch',
     shipped: 'shipped and on its way',
     cancelled: 'cancelled',
   };
-  const title = status === 'shipped' ? 'Your order is on its way' : 'Order ' + labels[status];
+  const title = status === 'shipped' ? 'Your order is on its way' : status === 'packed' ? 'Your order is being prepared' : 'Order ' + labels[status];
   const otpText = otp ? '\nYour delivery OTP is ' + otp + '. Share it with the delivery agent only when your parcel is physically delivered. It expires in 15 minutes.' : '';
   const text = 'Hello ' + order.customer_name + ',\nYour Durgamma Menswear order ' + order.order_number + ' is ' + labels[status] + '.' + otpText + '\nTrack your order at ' + baseUrl + '/track using your order number and checkout email.';
   const html = '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>' + title + '</h1><p>Hello ' + escapeEmailHtml(order.customer_name) + ',</p><p>Your order <strong>' + escapeEmailHtml(order.order_number) + '</strong> is ' + labels[status] + '.</p>' +
@@ -30,21 +30,24 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   if ('error' in auth) return auth.error;
   let body: { status?: string; note?: string };
   try { body = await request.json(); } catch { return adminJson({ error: 'Invalid request.' }, 400); }
-  const allowed = ['pending','confirmed','packed','shipped','cancelled'];
+  const allowed = ['confirmed','packed','shipped','cancelled'];
   if (!body.status || !allowed.includes(body.status)) {
     return adminJson({ error: 'Invalid order status. Delivery must be verified with the customer OTP.' }, 400);
   }
   const { id } = await params;
+  const { data: existingOrder, error: existingOrderError } = await auth.db.from('orders')
+    .select('id,order_number,customer_name,email,total_inr,order_status').eq('id', id).maybeSingle();
+  if (existingOrderError || !existingOrder) return adminJson({ error: 'Order not found.' }, 404);
+
   const { data, error } = await auth.db.rpc('set_store_order_status', {
     p_order_id: id,
     p_status: body.status,
     p_note: (body.note || '').slice(0, 1000),
   });
   if (error) return adminJson({ error: error.message || 'Order update failed.' }, 409);
-
-  const { data: order, error: orderError } = await auth.db.from('orders')
-    .select('id,order_number,customer_name,email,total_inr').eq('id', id).maybeSingle();
-  if (orderError || !order) return adminJson({ ok: true, result: data, emailSent: false, warning: 'Order updated, but notification details could not be loaded.' });
+  if (existingOrder.order_status === body.status) {
+    return adminJson({ ok: true, result: data, emailSent: false, emailSkipped: true, message: 'Order already had this status. No duplicate email was sent.' });
+  }
 
   let otp: string | undefined;
   if (body.status === 'shipped') {
@@ -54,14 +57,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       delivery_otp_hash: otpHash(id, otp),
       delivery_otp_expires_at: expires,
     }).eq('id', id);
-    if (otpError) return adminJson({ ok: true, result: data, emailSent: false, warning: 'Order shipped, but delivery OTP could not be saved. Use Resend OTP after checking the database.' });
+    if (otpError) return adminJson({ ok: true, result: data, emailSent: false, warning: 'Order shipped, but delivery OTP could not be saved. Check the database before retrying.' });
   }
 
-  const emailResult = await sendStatusEmail(order, body.status, otp);
+  const emailResult = await sendStatusEmail(existingOrder, body.status, otp);
   return adminJson({
     ok: true,
     result: data,
     emailSent: emailResult.sent,
-    emailWarning: emailResult.sent ? undefined : 'Order status was saved, but email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in Netlify.',
+    emailWarning: emailResult.sent ? undefined : 'Order status was saved, but email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in your Vercel project environment variables, then redeploy.',
   });
 }
