@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server';
 import { adminJson, requireAdmin } from '../../../../../lib/admin';
 import { sendStoreEmail, escapeEmailHtml } from '../../../../../lib/order-email';
+import { getPublicSiteUrl } from '../../../../../lib/site-url';
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAdmin(request);
@@ -38,7 +39,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return adminJson({ ok: true, result: data, emailSent: false, emailWarning: 'Return status saved, but customer notification details could not be loaded.' });
   }
   const order: any = requestRow.orders;
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://durgamma-mensware.netlify.app').replace(/\/$/, '');
+  const baseUrl = getPublicSiteUrl(request.nextUrl.origin);
   const labels: Record<string, string> = {
     approved: 'approved for return/exchange',
     rejected: 'not approved',
@@ -61,6 +62,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     ok: true,
     result: data,
     emailSent: emailResult.sent,
-    emailWarning: emailResult.sent ? undefined : 'Return status was saved, but the customer email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in Netlify.',
+    emailWarning: emailResult.sent ? undefined : 'Return status was saved, but the customer email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM in your hosting environment.',
   });
 }
