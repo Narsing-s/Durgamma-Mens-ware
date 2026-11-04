@@ -182,7 +182,7 @@ export default function AdminPage() {
     </header>
     {message && <p className="admin-message" role="status">{message}</p>}
     {loading && <p role="status">Loading store operations…</p>}
-    {!data && !loading && message && <section className="admin-section" role="alert"><p>{message}</p><button onClick={() => load()}>Try again</button></section>}
+    {!data && !loading && message && <section className="admin-section"><button onClick={() => load()}>Try again</button></section>}
     {!data && !loading && !message && <p>Store operations are ready to load. <button onClick={() => load()}>Load dashboard</button></p>}
     {data && <>
       <section className="admin-stats">
