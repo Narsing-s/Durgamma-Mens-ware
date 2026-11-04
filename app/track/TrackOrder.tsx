@@ -46,6 +46,12 @@ export default function TrackOrder() {
   const [returnBusy, setReturnBusy] = useState(false);
   const [returnSubmitted, setReturnSubmitted] = useState(false);
   const [returnMessage, setReturnMessage] = useState('');
+  const [reviewItem, setReviewItem] = useState('');
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewTitle, setReviewTitle] = useState('');
+  const [reviewBody, setReviewBody] = useState('');
+  const [reviewBusy, setReviewBusy] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState('');
 
   useEffect(() => {
     const supplied = new URLSearchParams(window.location.search).get('token');
@@ -82,6 +88,7 @@ export default function TrackOrder() {
       if (!response.ok) throw new Error(data.error || 'Could not find your order.');
       setOrder(data);
       setSelectedReturnItem(data.items?.[0]?.id || '');
+      setReviewItem(data.items?.[0]?.id || '');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not find your order.');
     } finally {
@@ -100,6 +107,20 @@ export default function TrackOrder() {
       const result = await response.json(); if (!response.ok) throw new Error(result.error || 'Could not submit your request.');
       setReturnMessage('Your ' + returnType + ' request has been submitted. Reference: ' + result.requestId); setReturnSubmitted(true); setReturnReason(''); setReturnNote(''); setReturnTermsAccepted(false);
     } catch (err) { setReturnMessage(err instanceof Error ? err.message : 'Could not submit your request.'); } finally { setReturnBusy(false); }
+  }
+  async function submitReview(event: FormEvent) {
+    event.preventDefault(); setReviewMessage('');
+    if (!order || !reviewItem || !checkoutEmail.trim() || reviewTitle.trim().length < 3 || reviewBody.trim().length < 10) {
+      setReviewMessage('Enter your checkout email, select a purchased product and complete the review.'); return;
+    }
+    setReviewBusy(true);
+    try {
+      const response = await fetch('/api/products/reviews/' + encodeURIComponent(order.items.find(item => item.id === reviewItem)?.id ? (order as any).items.find((item:any)=>item.id===reviewItem).product_id || '' : ''), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderNumber:order.orderNumber,email:checkoutEmail.trim(),orderItemId:reviewItem,rating:reviewRating,title:reviewTitle.trim(),body:reviewBody.trim()}) });
+      const result=await response.json();
+      if(!response.ok) throw new Error(result.error || 'Could not submit feedback.');
+      setReviewMessage(result.message || 'Thank you for your feedback.'); setReviewTitle(''); setReviewBody('');
+    } catch(err) { setReviewMessage(err instanceof Error ? err.message : 'Could not submit feedback.'); }
+    finally { setReviewBusy(false); }
   }
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -160,6 +181,18 @@ export default function TrackOrder() {
             </form>
           </> : <p>The 7-day return/exchange period has ended or the delivery date is not available. Please contact the store for assistance.</p>}
           {returnMessage && <p className="track-return-message" role="status">{returnMessage}</p>}
+        </section>}
+        {order.status === "delivered" && <section className="track-return-panel">
+          <h3>PRODUCT FEEDBACK</h3>
+          <p>Share your experience with a product you purchased. Only verified delivered orders can submit feedback. Reviews are checked before appearing publicly.</p>
+          <form onSubmit={submitReview}>
+            <label>PRODUCT<select value={reviewItem} onChange={event=>setReviewItem(event.target.value)} required>{order.items.map(item=><option key={item.id} value={item.id}>{item.product_name} · Size {item.size}</option>)}</select></label>
+            <label>RATING<select value={reviewRating} onChange={event=>setReviewRating(Number(event.target.value))}><option value={5}>★★★★★ · Excellent</option><option value={4}>★★★★☆ · Good</option><option value={3}>★★★☆☆ · Average</option><option value={2}>★★☆☆☆ · Below expectations</option><option value={1}>★☆☆☆☆ · Poor</option></select></label>
+            <label>REVIEW TITLE<input value={reviewTitle} onChange={event=>setReviewTitle(event.target.value)} minLength={3} maxLength={100} required placeholder="Summarise your experience"/></label>
+            <label>YOUR FEEDBACK<textarea value={reviewBody} onChange={event=>setReviewBody(event.target.value)} minLength={10} maxLength={1500} required placeholder="What did you like or what could be better?"/></label>
+            <button disabled={reviewBusy}>{reviewBusy?'SUBMITTING…':'SUBMIT PRODUCT FEEDBACK'}</button>
+          </form>
+          {reviewMessage && <p className="track-return-message" role="status">{reviewMessage}</p>}
         </section>}
         {order.statusHistory && order.statusHistory.length > 0 && <div className="track-items"><h3>STATUS UPDATES</h3>{order.statusHistory.map((event,index)=><div className="track-item" key={index}><span><b>{event.status.replace('_',' ').toUpperCase()}</b><small>{event.note || 'Order status updated'}</small></span><small>{date(event.created_at)}</small></div>)}</div>}
         <p className="track-updated">Last updated {date(order.updatedAt)}</p>
