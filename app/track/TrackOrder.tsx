@@ -115,7 +115,7 @@ export default function TrackOrder() {
     }
     setReviewBusy(true);
     try {
-      const response = await fetch('/api/products/reviews/' + encodeURIComponent(order.items.find(item => item.id === reviewItem)?.id ? (order as any).items.find((item:any)=>item.id===reviewItem).product_id || '' : ''), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderNumber:order.orderNumber,email:checkoutEmail.trim(),orderItemId:reviewItem,rating:reviewRating,title:reviewTitle.trim(),body:reviewBody.trim()}) });
+      const response = await fetch('/api/products/reviews/submit', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({orderNumber:order.orderNumber,email:checkoutEmail.trim(),orderItemId:reviewItem,rating:reviewRating,title:reviewTitle.trim(),body:reviewBody.trim()}) });
       const result=await response.json();
       if(!response.ok) throw new Error(result.error || 'Could not submit feedback.');
       setReviewMessage(result.message || 'Thank you for your feedback.'); setReviewTitle(''); setReviewBody('');
