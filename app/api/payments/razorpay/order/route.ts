@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createHmac, timingSafeEqual } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { createClient } from '@supabase/supabase-js';
 
 export const runtime = 'nodejs';
@@ -7,10 +7,17 @@ export const dynamic = 'force-dynamic';
 const json=(body:unknown,status=200)=>NextResponse.json(body,{status,headers:{'Cache-Control':'no-store'}});
 const valid=(v:unknown,min:number,max:number):v is string=>typeof v==='string'&&v.trim().length>=min&&v.trim().length<=max;
 async function rateLimit(request:NextRequest){
- const url=process.env.UPSTASH_REDIS_REST_URL,token=process.env.UPSTASH_REDIS_REST_TOKEN;
- const ip=(request.headers.get('x-vercel-forwarded-for')||request.headers.get('x-forwarded-for')||'').split(',')[0].trim();
- if(!url||!token||!ip)return false;
- try{const r=await fetch(url.replace(/\/$/,'')+'/pipeline',{method:'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify([['INCR','durgamma:pay:'+ip],['EXPIRE','durgamma:pay:'+ip,60]]),cache:'no-store'});if(!r.ok)return false;const d=await r.json();return Number(d?.[0]?.result)<=5;}catch{return false;}
+ const url=process.env.NEXT_PUBLIC_SUPABASE_URL,service=process.env.SUPABASE_SERVICE_ROLE_KEY;
+ const rawIp=request.headers.get('x-vercel-forwarded-for')||request.headers.get('x-forwarded-for')||request.headers.get('x-nf-client-connection-ip')||'';
+ const ip=rawIp.split(',')[0].trim();
+ if(!url||!service||!ip||ip==='unknown')return false;
+ try{
+  const db=createClient(url,service,{auth:{autoRefreshToken:false,persistSession:false}});
+  const ipHash=createHash('sha256').update(ip).digest('hex');
+  const {data,error}=await db.rpc('consume_order_rate_limit',{p_ip_hash:ipHash});
+  if(error||typeof data!=='number')return false;
+  return data<=5;
+ }catch{return false;}
 }
 export async function POST(request:NextRequest){
  const origin=request.headers.get('origin'),site=process.env.NEXT_PUBLIC_SITE_URL;
