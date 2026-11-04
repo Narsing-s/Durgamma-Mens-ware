@@ -88,6 +88,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const emailResult = await sendStatusEmail(existingOrder, body.status, request.nextUrl.origin, otp, shipment);
+  if (otp && !emailResult.sent) {
+    // A shipped order can remain shipped, but never leave an active OTP that was not emailed.
+    const { error: clearError } = await auth.db.from('orders')
+      .update({ delivery_otp_hash: null, delivery_otp_expires_at: null })
+      .eq('id', id).eq('delivery_otp_hash', otpHash(id, otp));
+    if (clearError) console.error('Could not clear undelivered delivery OTP for order:', existingOrder.order_number);
+  }
   return adminJson({
     ok: true,
     result: data,

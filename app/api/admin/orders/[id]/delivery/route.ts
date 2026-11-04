@@ -39,7 +39,20 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
     const result = await notify(order, 'Your delivery OTP · ' + order.order_number,
       'Your delivery OTP is ' + otp + '. Share it with the delivery agent only when your parcel is physically delivered. It expires in 15 minutes. Track: ' + baseUrl + '/track',
       '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Delivery verification</h1><p>Hello ' + escapeEmailHtml(order.customer_name) + ',</p><p>Your delivery OTP for order <strong>' + escapeEmailHtml(order.order_number) + '</strong> is:</p><p style="font-size:32px;letter-spacing:8px;text-align:center;background:#f5f1e8;padding:18px">' + otp + '</p><p>Share it only with the delivery agent when your parcel is physically delivered. It expires in 15 minutes.</p><a href="' + baseUrl + '/track">Track your order</a></div>');
-    return adminJson({ ok: true, emailSent: result.sent, warning: result.sent ? undefined : 'OTP saved but email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM.' });
+    if (!result.sent) {
+      // Do not leave an active OTP that the customer never received.
+      const { error: clearError } = await auth.db.from('orders')
+        .update({ delivery_otp_hash: null, delivery_otp_expires_at: null })
+        .eq('id', id).eq('delivery_otp_hash', hashOtp(id, otp));
+      if (clearError) console.error('Could not clear undelivered delivery OTP for order:', order.order_number);
+      return adminJson({
+        ok: false,
+        emailSent: false,
+        error: result.warning || 'The OTP email could not be sent. Check the Gmail settings and retry.',
+        emailReason: result.reason || 'provider_error',
+      }, 502);
+    }
+    return adminJson({ ok: true, emailSent: true, message: 'A new delivery OTP email was accepted by the email provider.' });
   }
 
   if (body.action !== 'verify' || !/^\d{6}$/.test(body.otp || '')) {
@@ -73,5 +86,5 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   const result = await notify(order, 'Your order has been delivered · ' + order.order_number,
     'Hello ' + order.customer_name + ', your Durgamma Menswear order ' + order.order_number + ' has been delivered successfully. You can request a return or exchange within 7 days if the item meets the return conditions. Track: ' + baseUrl + '/track',
     '<div style="font-family:Arial,sans-serif;color:#202020;max-width:600px;margin:auto"><p style="letter-spacing:2px;color:#987b4e">DURGAMMA MENSWEAR</p><h1>Your order has been delivered.</h1><p>Hello ' + escapeEmailHtml(order.customer_name) + ',</p><p>Your order <strong>' + escapeEmailHtml(order.order_number) + '</strong> was marked delivered after OTP verification.</p><p>You may request a return or exchange within 7 days, subject to the item condition and inspection policy.</p><a href="' + baseUrl + '/track">View order and return options</a></div>');
-  return adminJson({ ok: true, result: data, emailSent: result.sent, warning: result.sent ? undefined : 'Delivery was recorded, but the delivery email was not sent. Configure RESEND_API_KEY and ORDER_EMAIL_FROM.' });
+  return adminJson({ ok: true, result: data, emailSent: result.sent, warning: result.sent ? undefined : result.warning || 'Delivery was recorded, but the delivery email was not sent. Check the configured email provider.' });
 }
