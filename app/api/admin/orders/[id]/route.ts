@@ -44,9 +44,21 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     return adminJson({ error: 'Invalid order status. Delivery must be verified with the customer OTP.' }, 400);
   }
   const { id } = await params;
-  const { data: existingOrder, error: existingOrderError } = await auth.db.from('orders')
-    .select('id,order_number,customer_name,email,total_inr,order_status,shipping_provider,tracking_number,tracking_url,expected_delivery_date').eq('id', id).maybeSingle();
-  if (existingOrderError || !existingOrder) return adminJson({ error: 'Order not found.' }, 404);
+  const orderSelect = 'id,order_number,customer_name,email,total_inr,order_status,shipping_provider,tracking_number,tracking_url,expected_delivery_date';
+  const byId = await auth.db.from('orders').select(orderSelect).eq('id', orderId).maybeSingle();
+  let existingOrder = byId.data;
+  let existingOrderError = byId.error;
+  // Accept both the internal UUID and the customer-facing DMW order number.
+  if (!existingOrder) {
+    const byNumber = await auth.db.from('orders').select(orderSelect).eq('order_number', id).maybeSingle();
+    existingOrder = byNumber.data;
+    existingOrderError = byNumber.error || existingOrderError;
+  }
+  if (existingOrderError && !existingOrder) {
+    console.error('[admin/orders] Order lookup failed:', { code: existingOrderError.code, message: existingOrderError.message });
+  }
+  if (!existingOrder) return adminJson({ error: 'Order not found. Refresh the admin Orders list and try again.' }, 404);
+  const orderId = existingOrder.id;
 
   let shipment: any = null;
   if (body.status === 'shipped') {
@@ -63,13 +75,13 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
       return adminJson({ error: 'Expected delivery date must use YYYY-MM-DD.' }, 400);
     }
     shipment = { shipping_provider: shippingProvider, tracking_number: trackingNumber, tracking_url: trackingUrl || null, expected_delivery_date: expectedDeliveryDate || null };
-    const { error: shipmentError } = await auth.db.from('orders').update(shipment).eq('id', id);
+    const { error: shipmentError } = await auth.db.from('orders').update(shipment).eq('id', orderId);
     if (shipmentError) return adminJson({ error: 'Could not save courier details. Apply the courier tracking migration in Supabase, then retry.' }, 409);
   }
 
   const sameStatus = existingOrder.order_status === body.status;
   const { data, error } = sameStatus ? { data: null, error: null } : await auth.db.rpc('set_store_order_status', {
-    p_order_id: id,
+    p_order_id: orderId,
     p_status: body.status,
     p_note: (body.note || '').slice(0, 1000),
   });
@@ -81,9 +93,9 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     otp = String(randomInt(100000, 1000000));
     const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
     const { error: otpError } = await auth.db.from('orders').update({
-      delivery_otp_hash: otpHash(id, otp),
+      delivery_otp_hash: otpHash(orderId, otp),
       delivery_otp_expires_at: expires,
-    }).eq('id', id);
+    }).eq('id', orderId);
     if (otpError) return adminJson({ ok: true, result: data, emailSent: false, warning: 'Order shipped, but delivery OTP could not be saved. Check the database before retrying.' });
   }
 
@@ -92,7 +104,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // A shipped order can remain shipped, but never leave an active OTP that was not emailed.
     const { error: clearError } = await auth.db.from('orders')
       .update({ delivery_otp_hash: null, delivery_otp_expires_at: null })
-      .eq('id', id).eq('delivery_otp_hash', otpHash(id, otp));
+      .eq('id', orderId).eq('delivery_otp_hash', otpHash(orderId, otp));
     if (clearError) console.error('Could not clear undelivered delivery OTP for order:', existingOrder.order_number);
   }
   return adminJson({
