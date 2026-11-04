@@ -84,9 +84,9 @@ export default function AdminPage() {
       const trackingNumber = (prompt('Courier AWB / tracking number:', current?.tracking_number || '') || '').trim();
       if (!trackingNumber) { setMessage('Courier tracking number is required before shipping.'); return; }
       const trackingUrl = (prompt('Courier tracking URL (optional):', current?.tracking_url || '') || '').trim();
-      if (trackingUrl && !/^https?:\\/\\//i.test(trackingUrl)) { setMessage('Tracking URL must start with https:// or http://.'); return; }
+      if (trackingUrl && !/^https?:\/\//i.test(trackingUrl)) { setMessage('Tracking URL must start with https:// or http://.'); return; }
       const expectedDeliveryDate = (prompt('Expected delivery date (YYYY-MM-DD, optional):', current?.expected_delivery_date || '') || '').trim();
-      if (expectedDeliveryDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(expectedDeliveryDate)) { setMessage('Expected delivery date must use YYYY-MM-DD.'); return; }
+      if (expectedDeliveryDate && !/^\d{4}-\d{2}-\d{2}$/.test(expectedDeliveryDate)) { setMessage('Expected delivery date must use YYYY-MM-DD.'); return; }
       shipment = { shippingProvider, trackingNumber, trackingUrl, expectedDeliveryDate };
     }
     const response = await fetch('/api/admin/orders/' + id, {
@@ -261,7 +261,7 @@ export default function AdminPage() {
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
               {order.order_status === 'pending' && <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>}
-              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
+              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
             </div>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
