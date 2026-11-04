@@ -2,6 +2,7 @@ import { NextRequest } from 'next/server';
 import { createHmac, randomInt, timingSafeEqual } from 'node:crypto';
 import { adminJson, requireAdmin } from '../../../../../../lib/admin';
 import { sendStoreEmail, escapeEmailHtml } from '../../../../../../lib/order-email';
+import { getPublicSiteUrl } from '../../../../../../lib/site-url';
 
 function hashOtp(orderId: string, otp: string) {
   return createHmac('sha256', process.env.SUPABASE_SERVICE_ROLE_KEY || '')
@@ -25,7 +26,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
   if (loadError || !order) return adminJson({ error: 'Order not found.' }, 404);
   if (order.order_status !== 'shipped') return adminJson({ error: 'A delivery OTP is available only for shipped orders.' }, 409);
 
-  const baseUrl = (process.env.NEXT_PUBLIC_SITE_URL || 'https://durgamma-mensware.netlify.app').replace(/\/$/, '');
+  const baseUrl = getPublicSiteUrl(request.nextUrl.origin);
 
   if (body.action === 'resend') {
     const otp = String(randomInt(100000, 1000000));
