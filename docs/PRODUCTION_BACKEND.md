@@ -13,7 +13,7 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 - Server-side order creation: database prices are authoritative; stock reservation is performed in a database transaction.
 - Upstash Redis REST: fail-closed rate limiting for order and payment creation.
 - Razorpay: server routes for gateway order creation, signature verification, cancellation and signed webhook handling are retained but customer-facing online payment is staged and disabled.
-- Vercel: host the storefront and server routes; store secrets only as encrypted environment variables.
+- Deployment: use a compatible Next.js Node.js host (Vercel or Netlify); store secrets only as encrypted environment variables. Set `NEXT_PUBLIC_SITE_URL` to the exact public origin. Email links, metadata, robots and sitemap URLs resolve from this setting, with request-origin fallback for server-generated links.
 
 ## Supabase
 
@@ -28,15 +28,19 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 
 ## Environment variables
 
-Copy `.env.example` to `.env.local` for local development. Configure the following in Vercel Project → Settings → Environment Variables:
+Copy `.env.example` to `.env.local` for local development. Configure the following in the hosting provider's project environment variables:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY` (server only)
-- `NEXT_PUBLIC_SITE_URL`
+- `NEXT_PUBLIC_SITE_URL` (canonical public origin, e.g. `https://your-live-store-domain`)
+- `RESEND_API_KEY` (server-only Resend API key)
+- `ORDER_EMAIL_FROM` (sender address on a domain verified in Resend)
 - `STORE_ADMIN_EMAILS` (comma-separated exact owner email allow-list; each owner must have a Supabase Auth account)
 - `UPSTASH_REDIS_REST_URL`
 - `UPSTASH_REDIS_REST_TOKEN`
+
+Set the same `NEXT_PUBLIC_SITE_URL` as the Supabase Auth Site URL and include `/account` in the allowed redirect URLs. Redeploy after changing environment variables.
 
 Razorpay variables are reserved for the later payment activation:
 
@@ -52,7 +56,7 @@ Cash on Delivery is the default checkout method. The order endpoint validates cu
 
 Razorpay server routes remain in the codebase, but the online option is disabled in the checkout UI by design. Do not enable it merely by adding credentials. Before activation:
 
-1. Configure Razorpay test credentials and webhook secret in Vercel.
+1. Configure Razorpay test credentials and webhook secret in the hosting environment.
 2. Confirm the live Supabase catalogue and variant stock are correct.
 3. Test order creation and server-calculated amount cross-checks.
 4. Test successful capture, failed payment, checkout dismissal, cancellation and inventory release.
@@ -66,7 +70,7 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 - Validate garment size charts and supplier-specific fit information.
 - Configure shipping charges, serviceable PIN codes and delivery estimates.
 - Publish customer support details, privacy policy, terms, cancellation, return and refund policies.
-- Add transactional email/SMS notifications and a secure order fulfilment process.
+- Configure Resend and verify pending-order confirmation, customer confirmation/cancellation, order-status, delivery OTP, delivered and return/exchange notification emails. SMS and carrier integrations are not currently enabled.
 - Use the owner-only admin dashboard to manage products, upload photos directly from a computer or phone (JPG/PNG/WebP, max 5 MB), preview selected photos, replace product photos, edit selling price and MRP, create size/colour variants, publish drafts, update stock with an audit trail, configure delivery PIN codes, and process return/exchange requests.
 - Selling price is stored in `price_inr`; optional MRP/original price is stored in `compare_at_price_inr`. The server rejects an MRP below the selling price. Keep MRP accurate and do not use an inflated reference price.
 - Customers can request a return or exchange from their private tracking link within 7 days of delivery. The database checks eligibility and prevents duplicate active requests.
@@ -77,4 +81,4 @@ Razorpay server routes remain in the codebase, but the online option is disabled
 
 ## Honest scope boundary
 
-The repository does not yet contain customer sign-in/order-history, carrier API integration, transactional notification delivery or live Razorpay checkout. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
+The repository includes customer sign-in/account screens and transactional email hooks through Resend, but it does not yet provide a consolidated customer order-history dashboard, carrier API integration, SMS delivery or live Razorpay checkout. Email sending is conditional on valid Resender credentials and a verified sender; a successful order response with `emailSent: false` means the order exists but the notification was not delivered. Product image uploads require the product-media migration and a public `product-images` Supabase Storage bucket; uploads are accepted only by the owner-authenticated server route. The owner must configure real products, delivery PIN codes, support contacts, and store policies before launch. These require store-owner decisions, authentication/authorization and service credentials; the storefront should not pretend those capabilities are active.
