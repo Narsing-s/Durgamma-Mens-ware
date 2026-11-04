@@ -161,7 +161,7 @@ export default function AdminPage() {
   async function deliveryAction(id: string, action: 'resend' | 'verify', orderNumber?: string) {
     if (deliveryBusy[id]) return;
     const otp = (deliveryCodes[id] || '').trim();
-    if (action === 'verify' && !/^\\d{6}$/.test(otp)) {
+    if (action === 'verify' && !/^\d{6}$/.test(otp)) {
       setMessage('Enter the exact 6-digit OTP received by the customer before verifying delivery.');
       return;
     }
