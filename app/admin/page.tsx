@@ -158,7 +158,7 @@ export default function AdminPage() {
   }
 
 
-  async function deliveryAction(id: string, action: 'resend' | 'verify') {
+  async function deliveryAction(id: string, action: 'resend' | 'verify', orderNumber?: string) {
     if (deliveryBusy[id]) return;
     const otp = (deliveryCodes[id] || '').trim();
     if (action === 'verify' && !/^\\d{6}$/.test(otp)) {
@@ -168,7 +168,10 @@ export default function AdminPage() {
     setDeliveryBusy(current => ({ ...current, [id]: action }));
     setMessage(action === 'resend' ? 'Requesting a new delivery OTP email…' : 'Verifying the customer OTP…');
     try {
-      const response = await fetch('/api/admin/orders/' + id + '/delivery', {
+      // Use the customer-facing order number for delivery actions. The API also accepts UUIDs,
+      // but this keeps the admin action tied to the exact order displayed in this row.
+      const routeOrderId = encodeURIComponent(orderNumber || id);
+      const response = await fetch('/api/admin/orders/' + routeOrderId + '/delivery', {
         method: 'POST',
         cache: 'no-store',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
@@ -288,7 +291,7 @@ export default function AdminPage() {
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
               {order.order_status === 'pending' && <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>}
-              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button disabled={!!deliveryBusy[order.id] || (deliveryCodes[order.id] || '').length !== 6} onClick={() => deliveryAction(order.id, 'verify')}>{deliveryBusy[order.id] === 'verify' ? 'VERIFYING…' : 'Verify &amp; deliver'}</button><button disabled={!!deliveryBusy[order.id]} onClick={() => deliveryAction(order.id, 'resend')}>{deliveryBusy[order.id] === 'resend' ? 'SENDING OTP…' : 'Resend OTP'}</button></span>}
+              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button disabled={!!deliveryBusy[order.id] || (deliveryCodes[order.id] || '').length !== 6} onClick={() => deliveryAction(order.id, 'verify', order.order_number)}>{deliveryBusy[order.id] === 'verify' ? 'VERIFYING…' : 'Verify &amp; deliver'}</button><button disabled={!!deliveryBusy[order.id]} onClick={() => deliveryAction(order.id, 'resend', order.order_number)}>{deliveryBusy[order.id] === 'resend' ? 'SENDING OTP…' : 'Resend OTP'}</button></span>}
             </div>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
