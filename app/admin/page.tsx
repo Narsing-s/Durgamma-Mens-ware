@@ -10,6 +10,7 @@ type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any
 export default function AdminPage() {
   const [adjustments, setAdjustments] = useState<Record<string, string>>({});
   const [deliveryCodes, setDeliveryCodes] = useState<Record<string, string>>({});
+  const [emailSending, setEmailSending] = useState<Record<string, boolean>>({});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -83,6 +84,23 @@ export default function AdminPage() {
     const result = await response.json();
     setMessage(response.ok ? (result.message || result.emailWarning || (result.emailSent === false ? 'Order status saved, but notification email was not sent.' : 'Order updated successfully.')) : result.error || 'Update failed.');
     if (response.ok) load();
+  }
+
+  async function resendConfirmation(id: string) {
+    setEmailSending(current => ({ ...current, [id]: true }));
+    setMessage('');
+    try {
+      const response = await fetch('/api/admin/orders/' + id + '/confirmation', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + token },
+      });
+      const result = await response.json().catch(() => ({}));
+      setMessage(response.ok ? (result.message || 'Confirmation email sent.') : result.error || 'Confirmation email could not be sent.');
+    } catch {
+      setMessage('Unable to reach the email service. Please retry.');
+    } finally {
+      setEmailSending(current => ({ ...current, [id]: false }));
+    }
   }
 
   async function adjustStock(id: string) {
@@ -229,6 +247,7 @@ export default function AdminPage() {
                 <option value={order.order_status}>{order.order_status[0].toUpperCase() + order.order_status.slice(1)}</option>
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
+              {order.order_status === 'pending' && <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>}
               {order.order_status === 'shipped' && <span className="admin-delivery-verify"><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
             </div>;
           })}
