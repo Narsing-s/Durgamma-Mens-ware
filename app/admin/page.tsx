@@ -5,7 +5,7 @@ import { User } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient, getSupabaseBrowserConfigIssue } from '@/lib/supabase-browser';
 import Link from 'next/link';
 
-type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[] };
+type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[]; reviews: any[] };
 
 export default function AdminPage() {
   const [adjustments, setAdjustments] = useState<Record<string, string>>({});
@@ -40,7 +40,7 @@ export default function AdminPage() {
         setMessage(result.error || `Could not load store operations (HTTP ${response.status}).`);
         return;
       }
-      if (!result || !Array.isArray(result.products) || !Array.isArray(result.orders) || !Array.isArray(result.returns) || !Array.isArray(result.lowStock)) {
+      if (!result || !Array.isArray(result.products) || !Array.isArray(result.orders) || !Array.isArray(result.returns) || !Array.isArray(result.lowStock) || !Array.isArray(result.reviews)) {
         setMessage('The store service returned incomplete data. Please retry or check the deployment logs.');
         return;
       }
@@ -203,6 +203,16 @@ export default function AdminPage() {
     }
   }
 
+  async function moderateReview(id: string, status: 'approved' | 'rejected') {
+    const response = await fetch('/api/admin/reviews/' + id, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+      body: JSON.stringify({ status }),
+    });
+    const result = await response.json().catch(() => ({}));
+    setMessage(response.ok ? 'Product feedback ' + status + '.' : result.error || 'Could not update feedback.');
+    if (response.ok) load();
+  }
+
   async function signOut() {
     await supabase?.auth.signOut();
     setUser(null);
@@ -321,6 +331,17 @@ export default function AdminPage() {
               </>}
             </span>
           </div>) : <p>No return or exchange requests yet.</p>}
+        </div>
+      </section>
+
+      <section className="admin-section" id="product-feedback">
+        <h2>Product feedback &amp; reviews</h2>
+        <p>Only reviews linked to delivered purchases are accepted. Approve genuine feedback to publish it on the product; reject inappropriate or unrelated submissions.</p>
+        <div className="admin-table">
+          {data.reviews.length ? data.reviews.map((review: any) => <div className="admin-row" key={review.id}>
+            <span><b>{review.products?.name || 'Product'} · {'★'.repeat(review.rating)}{'☆'.repeat(5-review.rating)}</b><small>{review.title} · {review.body} · {review.customer_name} · {review.orders?.order_number || 'Verified order'} · {new Date(review.created_at).toLocaleDateString('en-IN')}</small></span>
+            <span><b>{review.status.toUpperCase()}</b>{review.status === 'pending' && <><button onClick={() => moderateReview(review.id,'approved')}>Approve &amp; publish</button><button onClick={() => moderateReview(review.id,'rejected')}>Reject</button></>}</span>
+          </div>) : <p>No product feedback submitted yet.</p>}
         </div>
       </section>
 
