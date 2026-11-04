@@ -11,15 +11,27 @@ export async function GET(request: NextRequest) {
     auth.db.from('orders').select('id,order_number,customer_name,email,total_inr,order_status,payment_status,created_at,shipping_provider,tracking_number,tracking_url,expected_delivery_date').order('created_at', { ascending: false }).limit(100),
     auth.db.from('return_requests').select('id,status,request_type,reason,customer_note,admin_note,refund_reference,refund_method,refund_amount_inr,order_item_id,order_items(product_name,size,quantity,line_total_inr),created_at,orders(order_number,customer_name,total_inr)').order('created_at', { ascending: false }).limit(50),
     auth.db.from('product_variants').select('id,product_id,sku,size,colour,stock,products(name)').lte('stock', 5).order('stock', { ascending: true }).limit(100),
-    auth.db.from('product_reviews').select('id,customer_name,rating,title,body,status,created_at,products(name),orders(order_number)').order('created_at',{ascending:false}).limit(100),
+    auth.db.from('product_reviews').select('id,customer_name,rating,title,body,status,created_at,products(name),orders(order_number)').order('created_at', { ascending: false }).limit(100),
   ]);
+
+  // Reviews are an optional admin feature. A missing table/schema must not take
+  // down core store operations such as orders, products, inventory and returns.
+  if (reviews.error) {
+    console.error('[admin/store] Product reviews unavailable; apply the product_reviews migration:', {
+      code: reviews.error.code,
+      message: reviews.error.message,
+      details: reviews.error.details,
+      hint: reviews.error.hint,
+    });
+  }
+
   const failures = [
     { table: 'products', error: products.error },
     { table: 'orders', error: orders.error },
     { table: 'return_requests', error: returns.error },
     { table: 'product_variants', error: lowStock.error },
-    { table: 'product_reviews', error: reviews.error?.code === '42P01' ? null : reviews.error },
   ].filter(item => Boolean(item.error));
+
   if (failures.length) {
     for (const failure of failures) {
       if (failure.error) console.error('[admin/store] Database query failed:', {
@@ -32,5 +44,13 @@ export async function GET(request: NextRequest) {
       error: `Could not load store operations. Database query failed for: ${failures.map(item => item.table).join(', ')}. Check the database schema and deployment logs.`,
     }, 500);
   }
-  return adminJson({ products: products.data || [], orders: orders.data || [], returns: returns.data || [], lowStock: lowStock.data || [], reviews: reviews.data || [] });
+
+  return adminJson({
+    products: products.data || [],
+    orders: orders.data || [],
+    returns: returns.data || [],
+    lowStock: lowStock.data || [],
+    reviews: reviews.error ? [] : reviews.data || [],
+    reviewWarning: reviews.error ? 'Product feedback is temporarily unavailable. Apply supabase/migrations/20261106_product_reviews.sql in the Supabase SQL Editor.' : null,
+  });
 }
