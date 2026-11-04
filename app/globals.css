@@ -178,3 +178,13 @@ button:disabled{cursor:not-allowed;opacity:.45}
 
 /* Store admin access lives beside the shopping bag in the main header. */
 .admin-header-entry{display:inline-flex!important;align-items:center;justify-content:center;gap:6px;width:auto!important;min-width:38px;padding:0 10px!important;text-decoration:none;color:inherit;border-left:1px solid #e5e0d6!important;font-size:10px;font-weight:700;letter-spacing:.08em}.admin-header-entry span{display:inline-block}@media(max-width:520px){.admin-header-entry{padding:0 6px!important;gap:3px}.admin-header-entry span{font-size:9px}}
+
+/* Customer care entry points: one secure portal for returns, exchanges and reviews. */
+.track-care-shortcuts{display:flex;flex-wrap:wrap;gap:10px;margin:18px 0 8px}
+.track-care-shortcuts a{display:inline-flex;align-items:center;justify-content:center;padding:11px 15px;border:1px solid #d8cdb9;color:#665438;text-decoration:none;font-size:10px;font-weight:700;letter-spacing:1px;transition:background .2s,border-color .2s}
+.track-care-shortcuts a:hover{background:#f2eee5;border-color:#b79a61}
+.track-care-note{font-size:12px;line-height:1.7;color:#77756e;margin:0 0 22px}
+.footer-links{display:flex;justify-content:center;flex-wrap:wrap;gap:20px}
+.footer-links a{color:#eee9df;text-decoration:none;font-size:9px;letter-spacing:1.1px}
+.footer-links a:hover{color:#d9c9a9}
+@media(max-width:520px){.track-care-shortcuts a{flex:1 1 145px}.footer-links{gap:14px}}
