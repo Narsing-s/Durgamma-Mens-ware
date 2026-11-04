@@ -11,6 +11,7 @@ export default function AdminPage() {
   const [adjustments, setAdjustments] = useState<Record<string, string>>({});
   const [deliveryCodes, setDeliveryCodes] = useState<Record<string, string>>({});
   const [emailSending, setEmailSending] = useState<Record<string, boolean>>({});
+  const [deliveryBusy, setDeliveryBusy] = useState<Record<string, 'resend' | 'verify' | null>>({});
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState<User | null>(null);
@@ -158,17 +159,43 @@ export default function AdminPage() {
 
 
   async function deliveryAction(id: string, action: 'resend' | 'verify') {
-    const otp = deliveryCodes[id] || '';
-    const response = await fetch('/api/admin/orders/' + id + '/delivery', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify(action === 'resend' ? { action } : { action, otp }),
-    });
-    const result = await response.json();
-    setMessage(response.ok ? (result.warning || (result.emailSent === false ? 'Delivery updated, but customer email was not sent.' : action === 'verify' ? 'Delivery verified and marked delivered.' : 'A new delivery OTP was sent.')) : result.error || 'Delivery verification failed.');
-    if (response.ok) {
-      setDeliveryCodes(current => ({ ...current, [id]: '' }));
-      load();
+    if (deliveryBusy[id]) return;
+    const otp = (deliveryCodes[id] || '').trim();
+    if (action === 'verify' && !/^\\d{6}$/.test(otp)) {
+      setMessage('Enter the exact 6-digit OTP received by the customer before verifying delivery.');
+      return;
+    }
+    setDeliveryBusy(current => ({ ...current, [id]: action }));
+    setMessage(action === 'resend' ? 'Requesting a new delivery OTP email…' : 'Verifying the customer OTP…');
+    try {
+      const response = await fetch('/api/admin/orders/' + id + '/delivery', {
+        method: 'POST',
+        cache: 'no-store',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+        body: JSON.stringify(action === 'resend' ? { action } : { action, otp }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.ok === false) {
+        const detail = result.error || result.warning || `Delivery action failed (HTTP ${response.status}).`;
+        setMessage(detail + (result.emailReason ? ' [Email: ' + result.emailReason + ']' : ''));
+        return;
+      }
+      if (action === 'resend') {
+        setMessage(result.emailSent
+          ? 'Email provider accepted the new OTP email for ' + (data?.orders.find(order => order.id === id)?.email || 'the customer') + '. Ask the customer to check Inbox, Spam and Promotions.'
+          : result.warning || 'The OTP email was not sent. Check the email provider configuration.');
+      } else {
+        setMessage(result.emailSent === false
+          ? 'Delivery was verified and marked delivered, but the delivered confirmation email was not sent: ' + (result.warning || 'check email settings.')
+          : 'Delivery verified successfully. Order marked Delivered.');
+        setDeliveryCodes(current => ({ ...current, [id]: '' }));
+        await load();
+      }
+    } catch (error) {
+      console.error('Delivery action failed:', error);
+      setMessage('Could not reach the delivery service. Check your connection and deployment, then retry. The order has not been assumed delivered.');
+    } finally {
+      setDeliveryBusy(current => ({ ...current, [id]: null }));
     }
   }
 
@@ -261,7 +288,7 @@ export default function AdminPage() {
                 {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
               </select>
               {order.order_status === 'pending' && <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>}
-              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button onClick={() => deliveryAction(order.id, 'verify')}>Verify &amp; deliver</button><button onClick={() => deliveryAction(order.id, 'resend')}>Resend OTP</button></span>}
+              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) }))}/><button disabled={!!deliveryBusy[order.id] || (deliveryCodes[order.id] || '').length !== 6} onClick={() => deliveryAction(order.id, 'verify')}>{deliveryBusy[order.id] === 'verify' ? 'VERIFYING…' : 'Verify &amp; deliver'}</button><button disabled={!!deliveryBusy[order.id]} onClick={() => deliveryAction(order.id, 'resend')}>{deliveryBusy[order.id] === 'resend' ? 'SENDING OTP…' : 'Resend OTP'}</button></span>}
             </div>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
