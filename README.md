@@ -13,7 +13,7 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Editable selling price and MRP/original price with server-side validation and automatic storefront discount display
 - Multiple size/colour variants with SKU and stock controls, including customer-facing colour selection
 - Customer order tracking by secure link or order number plus checkout email
-- Transactional order/status/delivery emails through Brevo Free (300/day) or Resend when sender credentials are configured
+- Transactional order/status/delivery emails through Gmail SMTP (free, low-volume setup using a Google App Password), Brevo or Resend when the selected sender is configured
 - Customer delivery OTP verification before an order can be marked delivered
 - Seven-day return/exchange requests with eligibility checks, inspection stages and auditable manual refund references
 - Admin return processing and enforced order fulfilment transitions
@@ -56,7 +56,7 @@ Deploy this Next.js application to a compatible Node.js host or a supported Next
 - Replace sample catalogue data and sample photography with accurate, store-owned product content.
 - Confirm Supabase catalogue products and variants match the displayed products and selected sizes.
 - Configure delivery serviceability, shipping rules, customer support, returns, privacy and terms.
-- Configure transactional email using `EMAIL_PROVIDER=brevo`, `BREVO_API_KEY` and `ORDER_EMAIL_FROM` (the sender must be registered and its domain authenticated in Brevo); test confirmation, status, delivery-OTP and delivered emails. Resend remains available by setting `EMAIL_PROVIDER=resend` and `RESEND_API_KEY`.
+- Configure transactional email using the free Gmail SMTP option (`EMAIL_PROVIDER=gmail`, `GMAIL_USER`, and a Google App Password in `GMAIL_APP_PASSWORD`) or use Brevo/Resend with an authenticated sender domain. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for setup steps. Test pending-order confirmation, customer confirmation/cancellation, status, delivery-OTP and delivered emails. Email is not delivered until provider credentials and sender configuration are valid.
 - Confirm the seven-day return policy and eligibility criteria before publishing them to customers.
 - Run the full build and checkout tests with production-like data.
 - For Razorpay, complete test-mode checkout, signature verification, webhook idempotency, cancellation and refund testing before enabling online payment.
