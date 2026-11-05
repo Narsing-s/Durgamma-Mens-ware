@@ -26,10 +26,16 @@ async function createDb() {
 
 async function allowLookup(request: NextRequest, db: NonNullable<Awaited<ReturnType<typeof createDb>>>) {
   const ip = clientIp(request);
-  if (!ip) return 'unavailable' as const;
+  if (!ip) {
+    console.error('[order-tracking] Rate-limit check could not identify the client IP. Verify trusted proxy headers on the deployment host.');
+    return 'unavailable' as const;
+  }
   const hash = createHash('sha256').update(ip).digest('hex');
   const { data, error } = await db.rpc('consume_tracking_rate_limit', { p_ip_hash: hash });
-  if (error || typeof data !== 'number') return 'unavailable' as const;
+  if (error || typeof data !== 'number') {
+    console.error('[order-tracking] Rate-limit RPC failed:', error?.message || 'Unexpected RPC response type');
+    return 'unavailable' as const;
+  }
   return data > 20 ? 'limited' as const : 'ok' as const;
 }
 
