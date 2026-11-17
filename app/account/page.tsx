@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { User } from '@supabase/supabase-js';
 import { ArrowLeft, CheckCircle2, LockKeyhole, Mail, UserRound } from 'lucide-react';
 import { getSupabaseBrowserClient, getSupabaseBrowserConfigIssue } from '../../lib/supabase-browser';
+import CustomerOrderHistory from '../../components/CustomerOrderHistory';
 
 type Mode = 'login' | 'signup' | 'forgot' | 'reset';
 
@@ -120,6 +121,7 @@ export default function AccountPage() {
                 <p style={{ fontSize: 11, letterSpacing: '.16em', color: '#92784c', fontWeight: 800, marginTop: 25 }}>CUSTOMER ACCOUNT</p>
                 <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 32, fontWeight: 400, margin: '8px 0 12px' }}>Hello{user.user_metadata?.full_name ? ', ' + user.user_metadata.full_name : ''}.</h2>
                 <p style={{ color: '#6d675d', lineHeight: 1.6, overflowWrap: 'anywhere' }}>{user.email}</p>
+                <CustomerOrderHistory supabase={supabase} />
                 <div style={{ borderTop: '1px solid #eee8de', marginTop: 24, paddingTop: 20, display: 'grid', gap: 12 }}>
                   <p style={{ color: '#6d675d', fontSize: 13, margin: 0 }}>You are signed in to your Durgamma customer account.</p>
                   <button style={buttonStyle} onClick={signOut}>SIGN OUT</button>
