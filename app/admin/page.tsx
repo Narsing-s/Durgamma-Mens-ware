@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { User } from '@supabase/supabase-js';
 import { getSupabaseBrowserClient, getSupabaseBrowserConfigIssue } from '@/lib/supabase-browser';
 import Link from 'next/link';
+import StoreAnalytics from '@/components/StoreAnalytics';
 
 type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[]; reviews: any[] };
 
@@ -283,16 +284,8 @@ export default function AdminPage() {
           <a href="#reports">Store reports <span>Review sales totals and order status summary →</span></a>
         </div>
       </section>
-      <section className="admin-section" id="reports">
-        <h2>Store reports</h2>
-        <div className="admin-stats">
-          <div><span>Delivered orders (loaded)</span><b>{completedOrders}</b></div>
-          <div><span>Active orders (loaded)</span><b>{pendingOrders}</b></div>
-          <div><span>Cancelled orders (loaded)</span><b>{cancelledOrders}</b></div>
-          <div><span>Products in catalogue</span><b>{data.products.length}</b></div>
-        </div>
-        <small>Revenue shown above is the sum of non-cancelled orders in the latest 100 records returned by the dashboard, not an all-time accounting ledger.</small>
-      </section>
+      <StoreAnalytics token={token} />
+
 
       <section className="admin-section" id="orders">
         <h2>Orders</h2>
