@@ -48,7 +48,7 @@ export default function StoreAnalytics({ token }: { token: string }) {
 
   return (
     <section className="admin-section" aria-labelledby="advanced-analytics-title">
-      <div className="admin-section-heading">
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:16,flexWrap:"wrap"}}>
         <div><h2 id="advanced-analytics-title">Sales intelligence</h2><p>Server-calculated figures across all orders in the selected period. Sales means delivered orders only.</p></div>
         <label>Period{' '}
           <select aria-label="Analytics period" value={days} onChange={event => setDays(Number(event.target.value))}>
@@ -66,9 +66,9 @@ export default function StoreAnalytics({ token }: { token: string }) {
           <div><span>Active pipeline</span><b>{money(data.summary.pipeline_value_inr)}</b></div>
         </div>
         <h3>Daily delivered sales · last {Math.min(14, recentDays.length)} active days</h3>
-        {recentDays.length ? <div className="analytics-bars" role="img" aria-label="Bar chart of delivered sales by day">
-          {recentDays.map(item => <div className="analytics-bar-column" key={item.day} title={item.day + ': ' + money(item.sales_inr)}>
-            <div className="analytics-bar-track"><span style={{ height: Math.max(3, item.sales_inr / maxSales * 100) + '%' }} /></div>
+        {recentDays.length ? <div role="img" aria-label="Bar chart of delivered sales by day" style={{display:"grid",gridTemplateColumns:"repeat(14,minmax(0,1fr))",gap:8,alignItems:"end",minHeight:150,overflowX:"auto"}}>
+          {recentDays.map(item => <div key={item.day} title={item.day + ': ' + money(item.sales_inr)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,minWidth:0,height:150}}>
+            <div style={{height:125,width:"100%",display:"flex",alignItems:"end",background:"var(--admin-panel,#f1eee8)",borderRadius:6,overflow:"hidden"}}><span style={{display:"block",width:"100%",height:Math.max(3,item.sales_inr/maxSales*100)+"%",background:"var(--admin-accent,#b89454)",borderRadius:"6px 6px 0 0"}} /></div>
             <small>{item.day.slice(5)}</small>
           </div>)}
         </div> : <p>No orders recorded in this period yet.</p>}
