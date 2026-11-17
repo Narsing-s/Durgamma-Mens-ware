@@ -24,10 +24,11 @@ When Supabase is not configured, the shop displays a clearly labelled sample pre
 5. Apply `20261105_delivery_otp_and_refunds.sql` after the return-request foundation; it adds delivery OTP fields, tracking rate limits and refund audit data.
 6. Apply `20261106_email_order_confirmation.sql` after the order-status workflow migration; it adds expiring, single-use customer confirmation tokens and the secure pending → confirmed/cancelled transition.
 7. Apply `20261108_customer_order_history_index.sql` after the existing migrations to optimize verified customer order-history lookups.
-8. Add real products, upload store-owned images, and create all size/colour variants through the owner-only admin dashboard.
-9. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
-10. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
-11. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
+8. Apply `20261117_store_analytics.sql` to enable owner-only sales intelligence. It creates `get_store_analytics(days)`, restricted to `service_role`; the dashboard reports delivered sales, active pipeline, average order value, daily sales and top products. It excludes customer PII and is an operational report, not a tax/accounting ledger.
+9. Add real products, upload store-owned images, and create all size/colour variants through the owner-only admin dashboard.
+10. Keep Row Level Security enabled. Only active catalogue rows are public. Orders, order items and webhook records have no public read/write policies.
+11. Keep the service-role key server-only. Never put it in a `NEXT_PUBLIC_*` variable.
+12. Ensure product names and size values in the active catalogue match the cart mapping used by checkout.
 
 ## Environment variables
 
