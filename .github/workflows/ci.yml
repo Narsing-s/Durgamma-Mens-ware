@@ -31,6 +31,12 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Run repository tests
+        run: npm test
+
+      - name: Verify production feature and migration integrity
+        run: npm run verify:store
+
       - name: Type-check TypeScript
         run: npx tsc --noEmit
 
