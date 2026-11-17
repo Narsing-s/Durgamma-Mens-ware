@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "test": "node --test",
+    "verify:store": "node scripts/verify-store.mjs"
   },
   "dependencies": {
     "@types/node": "^26.6.6",
