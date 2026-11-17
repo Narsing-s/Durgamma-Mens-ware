@@ -42,7 +42,7 @@ for (const [label, pattern] of [
     process.exit(1);
   }
 }
-if (!/revoke all on function public\\.get_store_analytics\\(integer\\) from public, anon, authenticated/i.test(analyticsMigration) || !/to service_role/i.test(analyticsMigration)) {
+if (!/revoke all on function public\.get_store_analytics\(integer\) from public, anon, authenticated/i.test(analyticsMigration) || !/to service_role/i.test(analyticsMigration)) {
   console.error('[FAIL] Store analytics RPC must be restricted to the server service role.');
   process.exit(1);
 }
