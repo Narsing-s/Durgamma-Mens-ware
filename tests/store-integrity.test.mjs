@@ -8,7 +8,7 @@ test('customer order history requires a verified Supabase identity', () => {
   const route = read('app/api/account/orders/route.ts');
   assert.match(route, /auth\.auth\.getUser\(token\)/);
   assert.match(route, /user\.email_confirmed_at/);
-  assert.match(route, /\.eq\('email', user\.email\)/);
+  assert.match(route, /\.eq\('email', user\.email\.toLowerCase\(\)\)/);
   assert.match(route, /Cache-Control': 'no-store, private'/);
   assert.doesNotMatch(route, /tracking_token_hash|shipping_address|customer_name|phone/);
 });
