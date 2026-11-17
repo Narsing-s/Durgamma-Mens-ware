@@ -31,7 +31,7 @@ const customerRoute = readFileSync('app/api/account/orders/route.ts', 'utf8');
 for (const [label, pattern] of [
   ['verified authentication', /auth\.auth\.getUser\(token\)/],
   ['verified email requirement', /user\.email_confirmed_at/],
-  ['email-scoped query', /\.eq\('email', user\.email\)/],
+  ['email-scoped query', /\.eq\('email', user\.email\.toLowerCase\(\)\)/],
   ['private no-store response', /Cache-Control': 'no-store, private'/],
 ]) {
   if (!pattern.test(customerRoute)) {

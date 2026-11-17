@@ -13,6 +13,7 @@ A responsive men's fashion storefront built with Next.js 15, React, TypeScript, 
 - Editable selling price and MRP/original price with server-side validation and automatic storefront discount display
 - Multiple size/colour variants with SKU and stock controls, including customer-facing colour selection
 - Customer order tracking by secure link or order number plus checkout email
+- Verified customer account order history, with server-side session validation and private order summaries
 - Transactional order/status/delivery emails through Gmail SMTP (free, low-volume setup using a Google App Password), Brevo or Resend when the selected sender is configured
 - Customer delivery OTP verification before an order can be marked delivered
 - Seven-day return/exchange requests with eligibility checks, inspection stages and auditable manual refund references
@@ -32,6 +33,8 @@ Razorpay server-side order creation, payment verification, cancellation and webh
 ```bash
 npm install
 cp .env.example .env.local
+npm test
+npm run verify:store
 npm run dev
 ```
 
@@ -45,7 +48,7 @@ Open http://localhost:3000.
 4. Configure `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or the legacy `NEXT_PUBLIC_SUPABASE_ANON_KEY`) and the server-only `SUPABASE_SERVICE_ROLE_KEY` in your hosting environment. Never expose the service-role key to the browser or commit credentials.
 5. Checkout and customer tracking/return endpoints use Supabase-backed rate limiting; apply the corresponding database migrations before accepting live traffic.
 
-Apply the secure order tracking migration, the real-store operations, inventory audit, PIN shipping, product media/returns, rate-limit, delivery OTP/refund, and [customer email order-confirmation migration](supabase/migrations/20261106_email_order_confirmation.sql) in dependency order. The delivery migration adds expiring delivery OTPs, tracking rate limits and refund audit fields. The email-confirmation migration adds expiring, single-use confirmation tokens and the secure pending → confirmed/cancelled database transition. Apply each migration once in Supabase SQL Editor and check the existing migration history first. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for the complete launch checklist.
+Apply the secure order tracking migration, real-store operations, inventory audit, PIN shipping, product media/returns, rate-limit, delivery OTP/refund, and [customer email order-confirmation migration](supabase/migrations/20261106_email_order_confirmation.sql), followed by `supabase/migrations/20261108_customer_order_history_index.sql`, in dependency order. The delivery migration adds expiring delivery OTPs, tracking rate limits and refund audit fields. The email-confirmation migration adds expiring, single-use confirmation tokens and the secure pending → confirmed/cancelled database transition. Apply each migration once in Supabase SQL Editor and check the existing migration history first. The product media migration creates the public-read `product-images` storage bucket; uploads are restricted to the authenticated owner route. Customer returns are accepted only for delivered orders within 7 days, and the database prevents duplicate active requests. See [Production backend setup](docs/PRODUCTION_BACKEND.md) for the complete launch checklist.
 
 ## Deployment
 

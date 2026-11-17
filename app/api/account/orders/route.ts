@@ -26,8 +26,8 @@ export async function GET(request: NextRequest) {
 
   const db = createClient(url, serviceKey, { auth: { autoRefreshToken: false, persistSession: false } });
   const { data, error } = await db.from('orders')
-    .select('id,order_number,order_status,payment_status,total_inr,created_at,updated_at,shipping_provider,tracking_number,tracking_url,expected_delivery_date,order_items(id,product_name,size,colour,quantity,unit_price_inr,line_total_inr),order_status_events(status,note,created_at),return_requests(id,status,request_type,created_at)')
-    .eq('email', user.email)
+    .select('id,order_number,order_status,payment_status,total_inr,created_at,updated_at,shipping_provider,tracking_number,tracking_url,expected_delivery_date,order_items(id,product_name,size,colour,quantity,unit_price_inr,line_total_inr),return_requests(id,status,request_type,created_at)')
+    .eq('email', user.email.toLowerCase())
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -40,7 +40,6 @@ export async function GET(request: NextRequest) {
     orders: (data || []).map((order) => ({
       ...order,
       order_items: order.order_items || [],
-      order_status_events: order.order_status_events || [],
       return_requests: order.return_requests || [],
     })),
   });
