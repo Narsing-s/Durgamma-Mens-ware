@@ -6,12 +6,13 @@ export const dynamic = 'force-dynamic';
 export async function GET(request: NextRequest) {
   const auth = await requireAdmin(request);
   if ('error' in auth) return auth.error;
-  const [products, orders, returns, lowStock, reviews] = await Promise.all([
+  const [products, orders, returns, lowStock, reviews, inventoryHistory] = await Promise.all([
     auth.db.from('products').select('id,name,category,price_inr,is_active,product_variants(id,size,colour,stock,sku)').order('updated_at', { ascending: false }),
     auth.db.from('orders').select('id,order_number,customer_name,email,total_inr,order_status,payment_status,created_at,shipping_provider,tracking_number,tracking_url,expected_delivery_date').order('created_at', { ascending: false }).limit(100),
     auth.db.from('return_requests').select('id,status,request_type,reason,customer_note,admin_note,refund_reference,refund_method,refund_amount_inr,order_item_id,order_items(product_name,size,quantity,line_total_inr),created_at,orders(order_number,customer_name,total_inr)').order('created_at', { ascending: false }).limit(50),
     auth.db.from('product_variants').select('id,product_id,sku,size,colour,stock,products(name)').lte('stock', 5).order('stock', { ascending: true }).limit(100),
     auth.db.from('product_reviews').select('id,customer_name,rating,title,body,status,created_at,products(name),orders(order_number)').order('created_at', { ascending: false }).limit(100),
+    auth.db.from('inventory_adjustments').select('id,previous_stock,new_stock,reason,adjusted_by,created_at,product_variants(sku,size,colour,products(name))').order('created_at', { ascending: false }).limit(50),
   ]);
 
   // Reviews are an optional admin feature. A missing table/schema must not take
@@ -45,6 +46,13 @@ export async function GET(request: NextRequest) {
     }, 500);
   }
 
+  if (inventoryHistory.error) {
+    console.error('[admin/store] Inventory adjustment history unavailable; apply supabase/migrations/20261101_inventory_audit.sql:', {
+      code: inventoryHistory.error.code,
+      message: inventoryHistory.error.message,
+    });
+  }
+
   return adminJson({
     products: products.data || [],
     orders: orders.data || [],
@@ -52,5 +60,7 @@ export async function GET(request: NextRequest) {
     lowStock: lowStock.data || [],
     reviews: reviews.error ? [] : reviews.data || [],
     reviewWarning: reviews.error ? 'Product feedback is temporarily unavailable. Apply supabase/migrations/20261106_product_reviews.sql in the Supabase SQL Editor.' : null,
+    inventoryHistory: inventoryHistory.error ? [] : inventoryHistory.data || [],
+    inventoryHistoryWarning: inventoryHistory.error ? 'Stock history is unavailable. Apply supabase/migrations/20261101_inventory_audit.sql in the Supabase SQL Editor.' : null,
   });
 }
