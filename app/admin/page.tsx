@@ -144,7 +144,7 @@ export default function AdminPage() {
       const response = await fetch('/api/admin/orders/export', {
         method: 'GET',
         cache: 'no-store',
-        headers: { Accept: 'text/csv', Authorization: 'Bearer ' + token },
+        headers: { Accept: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', Authorization: 'Bearer ' + token },
       });
       if (!response.ok) {
         const result = await response.json().catch(() => ({}));
@@ -153,7 +153,7 @@ export default function AdminPage() {
       }
       const blob = await response.blob();
       const disposition = response.headers.get('Content-Disposition') || '';
-      const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'durgamma-orders.csv';
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'durgamma-orders.xlsx';
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
@@ -162,7 +162,7 @@ export default function AdminPage() {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      setMessage('Order CSV exported successfully.');
+      setMessage('Excel workbook exported successfully with a separate worksheet for each order date.');
     } catch (error) {
       console.error('Order export failed:', error);
       setMessage('Unable to export orders. Check your connection and try again.');
@@ -312,7 +312,7 @@ export default function AdminPage() {
         <button type="button" role="tab" aria-selected={activeTab === 'reports'} className={activeTab === 'reports' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('reports')}>Reports</button>
         <Link href="/admin/products">Products</Link>
       </nav>
-      <div><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
+      <div className="admin-header-actions"><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
     </header>
     {message && <p className="admin-message" role="status">{message}</p>}
     {loading && <p role="status">Loading store operations…</p>}
@@ -332,14 +332,14 @@ export default function AdminPage() {
 
 
       {activeTab === 'orders' && <section className="admin-section" id="orders" role="tabpanel" aria-label="orders">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (CSV)'}</button></div>
+        <div className="admin-section-heading"><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ORDERS (EXCEL)'}</button></div>
         <div className="admin-table">
           {data.orders.map(order => {
             const nextStatuses = order.order_status === 'pending' ? ['confirmed', 'cancelled']
               : order.order_status === 'confirmed' ? ['packed', 'cancelled']
               : order.order_status === 'packed' ? ['shipped', 'cancelled']
               : order.order_status === 'shipped' ? [] : [];
-            return <div className="admin-row" key={order.id}>
+            return <div className="admin-row admin-order-row" key={order.id}>
               <span><b>{order.order_number}</b><small>{order.customer_name} · {order.email}</small></span>
               <span>₹{Number(order.total_inr).toLocaleString('en-IN')}</span>
               <select value={order.order_status} disabled={!nextStatuses.length} onChange={event => updateOrder(order.id, event.target.value)}>

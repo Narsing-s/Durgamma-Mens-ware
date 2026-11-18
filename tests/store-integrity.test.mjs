@@ -60,17 +60,24 @@ test('admin inventory adjustments are visible as an optional owner-only audit hi
 });
 
 
-test('admin order CSV export is owner-authenticated, paginated, private and spreadsheet-safe', () => {
+test('admin Excel order export is owner-authenticated, paginated, private and grouped by India order date', () => {
   const route = read('app/api/admin/orders/export/route.ts');
   const page = read('app/admin/page.tsx');
+  const packageJson = JSON.parse(read('package.json'));
   assert.match(route, /requireAdmin\(request\)/);
   assert.match(route, /\.range\(offset, offset \+ pageSize - 1\)/);
   assert.match(route, /Content-Disposition/);
+  assert.match(route, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
   assert.match(route, /Cache-Control.*no-store, private/);
-  assert.match(route, /replace\(\/\"\/g, '\"\"'\)/);
-  assert.match(route, /formula marker/);
+  assert.match(route, /new Map<string, OrderRow\[\]>/);
+  assert.match(route, /timeZone: 'Asia\/Kolkata'/);
+  assert.match(route, /workbook\.addWorksheet\('Summary'\)/);
+  assert.match(route, /workbook\.addWorksheet\(date\)/);
+  assert.match(route, /formula marker|user-controlled text inert/);
   assert.match(route, /payment_status/);
-  assert.match(page, /EXPORT ALL ORDERS \(CSV\)/);
+  assert.equal(packageJson.dependencies.exceljs, '^4.4.0');
+  assert.match(page, /EXPORT ORDERS \(EXCEL\)/);
   assert.match(page, /Authorization: 'Bearer ' \+ token/);
+  assert.match(page, /application\/vnd\.openxmlformats-officedocument\.spreadsheetml\.sheet/);
   assert.match(page, /\/api\/admin\/orders\/export/);
 });
