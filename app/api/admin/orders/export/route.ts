@@ -111,6 +111,28 @@ export async function GET(request: NextRequest) {
   workbook.modified = new Date();
   workbook.views = [{ visibility: 'visible', x: 0, y: 0, width: 18000, height: 10000, firstSheet: 0, activeTab: 0 }];
 
+  // Put actual order sheets first so Excel opens directly on an order list,
+  // rather than the summary index. Each sheet is keyed by the order's IST creation date.
+  const sortedDates = [...groups.keys()].sort((a, b) => b.localeCompare(a));
+  for (const date of sortedDates) {
+    const dayOrders = groups.get(date) || [];
+    const sheetName = date === 'Unknown date'
+      ? 'Unknown date'
+      : new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Asia/Kolkata',
+          day: '2-digit',
+          month: 'short',
+          year: 'numeric',
+        }).format(new Date(date + 'T00:00:00+05:30'));
+    const sheet = workbook.addWorksheet(sheetName);
+    styleDataSheet(sheet, dayOrders);
+  }
+  if (!sortedDates.length) {
+    const emptySheet = workbook.addWorksheet('No orders');
+    styleDataSheet(emptySheet, []);
+  }
+
+  // Keep the date index as the last tab; it is not a consolidated orders sheet.
   const summary = workbook.addWorksheet('Summary');
   summary.columns = [
     { header: 'Order date (IST)', key: 'date', width: 22 },
@@ -120,20 +142,13 @@ export async function GET(request: NextRequest) {
   summary.views = [{ state: 'frozen', ySplit: 1 }];
   summary.getRow(1).font = { bold: true, color: { argb: 'FFFFFFFF' } };
   summary.getRow(1).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF302B27' } };
-  const sortedDates = [...groups.keys()].sort((a, b) => b.localeCompare(a));
   for (const date of sortedDates) {
     const dayOrders = groups.get(date) || [];
     const total = dayOrders.reduce((sum, order) => sum + Number(order.total_inr || 0), 0);
     const row = summary.addRow({ date, count: dayOrders.length, total });
     row.getCell('total').numFmt = '"₹"#,##0.00';
-    const sheet = workbook.addWorksheet(date);
-    styleDataSheet(sheet, dayOrders);
   }
-  if (!sortedDates.length) {
-    summary.addRow({ date: 'No orders found', count: 0, total: 0 });
-    const emptySheet = workbook.addWorksheet('No Orders');
-    styleDataSheet(emptySheet, []);
-  }
+  if (!sortedDates.length) summary.addRow({ date: 'No orders found', count: 0, total: 0 });
   summary.autoFilter = { from: 'A1', to: 'C1' };
 
   const buffer = await workbook.xlsx.writeBuffer();
