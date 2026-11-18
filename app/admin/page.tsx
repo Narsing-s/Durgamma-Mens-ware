@@ -6,7 +6,7 @@ import { getSupabaseBrowserClient, getSupabaseBrowserConfigIssue } from '@/lib/s
 import Link from 'next/link';
 import StoreAnalytics from '@/components/StoreAnalytics';
 
-type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[]; reviews: any[] };
+type StoreData = { products: any[]; orders: any[]; returns: any[]; lowStock: any[]; reviews: any[]; inventoryHistory: any[]; inventoryHistoryWarning?: string | null };
 
 export default function AdminPage() {
   const [adjustments, setAdjustments] = useState<Record<string, string>>({});
@@ -41,7 +41,7 @@ export default function AdminPage() {
         setMessage(result.error || `Could not load store operations (HTTP ${response.status}).`);
         return;
       }
-      if (!result || !Array.isArray(result.products) || !Array.isArray(result.orders) || !Array.isArray(result.returns) || !Array.isArray(result.lowStock) || !Array.isArray(result.reviews)) {
+      if (!result || !Array.isArray(result.products) || !Array.isArray(result.orders) || !Array.isArray(result.returns) || !Array.isArray(result.lowStock) || !Array.isArray(result.reviews) || !Array.isArray(result.inventoryHistory)) {
         setMessage('The store service returned incomplete data. Please retry or check the deployment logs.');
         return;
       }
@@ -357,6 +357,15 @@ export default function AdminPage() {
               <button onClick={() => adjustStock(variant.id)}>Update stock</button>
             </span>
           </div>) : <p>All tracked variants are above the low-stock threshold.</p>}
+        </div>
+        <h3>Recent stock adjustments</h3>
+        <p>Owner-only audit history showing who changed stock, when it changed and the recorded reason.</p>
+        {data.inventoryHistoryWarning && <p className="admin-message" role="status">{data.inventoryHistoryWarning}</p>}
+        <div className="admin-table">
+          {data.inventoryHistory.length ? data.inventoryHistory.map((entry: any) => <div className="admin-row" key={entry.id}>
+            <span><b>{entry.product_variants?.products?.name || 'Product'} · {entry.product_variants?.sku || 'SKU unavailable'}</b><small>{entry.product_variants?.size || 'Size'} · {entry.product_variants?.colour || 'Colour'} · {entry.reason}</small></span>
+            <span><b>{entry.previous_stock} → {entry.new_stock}</b><small>{entry.adjusted_by} · {new Date(entry.created_at).toLocaleString('en-IN')}</small></span>
+          </div>) : <p>No stock adjustments have been recorded yet.</p>}
         </div>
       </section>
 
