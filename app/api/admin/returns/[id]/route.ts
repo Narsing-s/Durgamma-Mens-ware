@@ -7,7 +7,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   const auth = await requireAdmin(request);
   if ('error' in auth) return auth.error;
 
-  let body: { status?: string; note?: string; refundReference?: string; refundMethod?: string; refundAmount?: number };
+  let body: { status?: string; note?: string; refundReference?: string; refundMethod?: string; refundAmount?: number; correctMistakenExchange?: boolean };
   try { body = await request.json(); } catch { return adminJson({ error: 'Invalid request.' }, 400); }
   const allowed = ['approved', 'rejected', 'received', 'refunded', 'exchanged'];
   if (!body.status || !allowed.includes(body.status)) {
@@ -22,14 +22,33 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
   }
 
   const { id } = await params;
-  const { data, error } = await auth.db.rpc('set_store_return_status', {
-    p_return_id: id,
-    p_status: body.status,
-    p_admin_note: typeof body.note === 'string' ? body.note.slice(0, 500) : '',
-    p_refund_reference: body.status === 'refunded' ? body.refundReference!.trim() : null,
-    p_refund_method: body.status === 'refunded' ? body.refundMethod : null,
-    p_refund_amount_inr: body.status === 'refunded' ? Number(body.refundAmount) : null,
-  });
+  const { data: currentRequest, error: currentError } = await auth.db.from('return_requests')
+    .select('request_type,status').eq('id', id).maybeSingle();
+  if (currentError || !currentRequest) return adminJson({ error: 'Return request not found.' }, 404);
+
+  const correctingMistake = body.correctMistakenExchange === true;
+  if (correctingMistake && !(currentRequest.request_type === 'return' && currentRequest.status === 'exchanged' && body.status === 'received')) {
+    return adminJson({ error: 'This correction is only valid for a RETURN accidentally marked EXCHANGED.' }, 409);
+  }
+  if (!correctingMistake && currentRequest.request_type === 'return' && body.status === 'exchanged') {
+    return adminJson({ error: 'This is a RETURN request. It cannot be marked EXCHANGED.' }, 409);
+  }
+  if (!correctingMistake && currentRequest.request_type === 'exchange' && body.status === 'refunded') {
+    return adminJson({ error: 'This is an EXCHANGE request. It cannot be marked REFUNDED.' }, 409);
+  }
+
+  const rpcName = correctingMistake ? 'correct_store_return_exchange_mistake' : 'set_store_return_status';
+  const rpcArgs = correctingMistake
+    ? { p_return_id: id, p_admin_note: typeof body.note === 'string' && body.note.trim() ? body.note.slice(0, 500) : 'Corrected accidental EXCHANGED status on a RETURN request' }
+    : {
+        p_return_id: id,
+        p_status: body.status,
+        p_admin_note: typeof body.note === 'string' ? body.note.slice(0, 500) : '',
+        p_refund_reference: body.status === 'refunded' ? body.refundReference!.trim() : null,
+        p_refund_method: body.status === 'refunded' ? body.refundMethod : null,
+        p_refund_amount_inr: body.status === 'refunded' ? Number(body.refundAmount) : null,
+      };
+  const { data, error } = await auth.db.rpc(rpcName, rpcArgs);
   if (error) return adminJson({ error: error.message || 'Return request update failed.' }, 409);
 
   const { data: requestRow, error: loadError } = await auth.db.from('return_requests')
