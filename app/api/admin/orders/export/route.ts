@@ -40,7 +40,7 @@ function safeCell(value: unknown): string | number | null {
   if (typeof value === 'number') return Number.isFinite(value) ? value : null;
   const text = String(value);
   // Keep user-controlled text inert if a spreadsheet application opens the file.
-  return /^[\\s\\u0000-\\u001f]*[=+@-]/.test(text) ? "'" + text : text;
+  return /^[\s\u0000-\u001f]*[=+@-]/.test(text) ? "'" + text : text;
 }
 
 function styleDataSheet(sheet: ExcelJS.Worksheet, rows: OrderRow[]) {
