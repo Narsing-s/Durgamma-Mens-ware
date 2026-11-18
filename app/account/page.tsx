@@ -104,8 +104,8 @@ export default function AccountPage() {
         <Link href="/" style={{ display: 'inline-flex', alignItems: 'center', gap: 9, color: '#514b40', textDecoration: 'none', fontSize: 12, letterSpacing: '.08em', fontWeight: 700 }}>
           <ArrowLeft size={16}/> BACK TO STORE
         </Link>
-        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(300px, 430px)', gap: 36, alignItems: 'center', minHeight: '82vh' }}>
-          <section style={{ padding: 'clamp(24px, 6vw, 76px) 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: user ? 'minmax(0, 900px)' : 'minmax(0, 1fr) minmax(300px, 430px)', justifyContent: 'center', gap: 36, alignItems: user ? 'start' : 'center', minHeight: user ? 'auto' : '82vh' }}>
+          {!user && <section style={{ padding: 'clamp(24px, 6vw, 76px) 0' }}>
             <p style={{ fontSize: 11, letterSpacing: '.2em', fontWeight: 800, color: '#92784c' }}>DURGAMMA MENSWEAR</p>
             <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 'clamp(42px, 7vw, 76px)', lineHeight: 1.02, fontWeight: 400, margin: '18px 0' }}>Your style.<br/><em>Your account.</em></h1>
             <p style={{ maxWidth: 440, color: '#6d675d', lineHeight: 1.8 }}>A simpler way to shop your favourites, keep your details close and enjoy every Durgamma order.</p>
@@ -153,7 +153,7 @@ export default function AccountPage() {
           </section>
         </div>
       </div>
-      <style>{'@media(max-width:760px){main>div>div:nth-child(2){grid-template-columns:1fr!important;gap:8px!important;min-height:auto!important}main>div>div:nth-child(2)>section:first-child{padding:42px 0 12px!important}}'}</style>
+      <style>{'@media(max-width:760px){main>div>div:nth-child(2){grid-template-columns:1fr!important;gap:8px!important;min-height:auto!important}}'}</style>
     </main>
   );
 }
