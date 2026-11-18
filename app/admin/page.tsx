@@ -332,7 +332,7 @@ export default function AdminPage() {
 
 
       {activeTab === 'orders' && <section className="admin-section" id="orders" role="tabpanel" aria-label="orders">
-        <div className="admin-section-heading"><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ORDERS (EXCEL)'}</button></div>
+        <div className="admin-section-heading"><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (EXCEL)'}</button></div>
         <div className="admin-table admin-orders-table">
           <div className="admin-orders-columns" aria-hidden="true"><span>ORDER / CUSTOMER</span><span>AMOUNT</span><span>STATUS</span><span>ACTION</span></div>
           {data.orders.map(order => {
