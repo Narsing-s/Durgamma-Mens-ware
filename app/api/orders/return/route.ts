@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
   } else {
     const { data, error } = await db.from('orders')
       .select('id,order_number,customer_name,email,order_status,delivered_at,tracking_token_hash')
-      .eq('order_number', orderNumber).eq('email', email).maybeSingle();
+      .eq('order_number', orderNumber).ilike('email', email).maybeSingle();
     if (error) return json({ error: 'We could not verify this order.' }, 503);
     order = data;
     if (order && !order.tracking_token_hash) {
