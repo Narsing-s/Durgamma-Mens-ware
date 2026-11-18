@@ -311,6 +311,7 @@ export default function AdminPage() {
         <button type="button" role="tab" aria-selected={activeTab === 'inventory'} className={activeTab === 'inventory' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('inventory')}>Inventory</button>
         <button type="button" role="tab" aria-selected={activeTab === 'reports'} className={activeTab === 'reports' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('reports')}>Reports</button>
         <Link href="/admin/products">Products</Link>
+        <Link href="/admin/marketplaces">Marketplaces</Link>
       </nav>
       <div className="admin-header-actions"><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
     </header>
