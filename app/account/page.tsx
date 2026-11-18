@@ -112,7 +112,7 @@ export default function AccountPage() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 18, marginTop: 34, color: '#514b40', fontSize: 12, letterSpacing: '.06em' }}>
               <span>✓ PERSONAL ACCOUNT</span><span>✓ SECURE SIGN IN</span><span>✓ EASY CHECKOUT</span>
             </div>
-          </section>
+          </section>}
 
           <section style={{ width: '100%', boxSizing: 'border-box', background: '#fff', border: '1px solid #e8e1d5', borderRadius: 16, padding: 'clamp(20px, 4vw, 34px)', boxShadow: '0 18px 55px rgba(36,31,22,.07)', margin: user ? '24px auto 0' : 0 }}>
             {user ? (
