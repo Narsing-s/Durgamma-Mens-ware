@@ -107,6 +107,7 @@ export default function TrackOrder() {
     event.preventDefault(); setReturnMessage('');
     let suppliedToken = token.trim();
     try { if (suppliedToken.startsWith('http://') || suppliedToken.startsWith('https://')) suppliedToken = new URL(suppliedToken).searchParams.get('token') || ''; } catch { suppliedToken = ''; }
+    if (!/^[A-Za-z0-9_-]{40,60}$/.test(suppliedToken)) suppliedToken = '';
     if (returnReason.trim().length < 5 || !returnTermsAccepted || !selectedReturnItem || (!suppliedToken && (!order || !checkoutEmail.trim()))) { setReturnMessage('Enter a reason, verify your order and confirm the item-condition criteria.'); return; }
     setReturnBusy(true);
     try {
