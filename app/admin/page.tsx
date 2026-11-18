@@ -20,6 +20,7 @@ export default function AdminPage() {
   const [data, setData] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(false);
   const [exportingOrders, setExportingOrders] = useState(false);
+  const [activeTab, setActiveTab] = useState<'orders' | 'returns' | 'product-feedback' | 'inventory' | 'reports'>('orders');
   const [message, setMessage] = useState('');
   const supabase = getSupabaseBrowserClient();
   const supabaseConfigIssue = getSupabaseBrowserConfigIssue();
@@ -53,6 +54,22 @@ export default function AdminPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  useEffect(() => {
+    const allowedTabs = ['orders', 'returns', 'product-feedback', 'inventory', 'reports'];
+    const syncTabFromHash = () => {
+      const requestedTab = window.location.hash.replace(/^#/, '');
+      if (allowedTabs.includes(requestedTab)) setActiveTab(requestedTab as typeof activeTab);
+    };
+    syncTabFromHash();
+    window.addEventListener('hashchange', syncTabFromHash);
+    return () => window.removeEventListener('hashchange', syncTabFromHash);
+  }, []);
+
+  function selectTab(tab: typeof activeTab) {
+    setActiveTab(tab);
+    window.history.replaceState(null, '', '#' + tab);
   }
 
   useEffect(() => {
@@ -287,12 +304,12 @@ export default function AdminPage() {
         <h1>Store control centre</h1>
         <small>{user.email}</small>
       </div>
-      <nav className="admin-top-nav" aria-label="Store administration sections">
-        <a href="#orders">Orders</a>
-        <a className="admin-top-nav-returns" href="#returns">Returns &amp; exchanges <span>{data?.returns.filter(item => item.status === 'requested').length || 0} new</span></a>
-        <a href="#product-feedback">Product feedback</a>
-        <a href="#inventory">Inventory</a>
-        <a href="#reports">Reports</a>
+      <nav className="admin-top-nav" aria-label="Store administration tabs" role="tablist">
+        <button type="button" role="tab" aria-selected={activeTab === 'orders'} className={activeTab === 'orders' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('orders')}>Orders</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'returns'} className={activeTab === 'returns' ? 'admin-tab-button active admin-top-nav-returns' : 'admin-tab-button'} onClick={() => selectTab('returns')}>Returns &amp; exchanges <span>{data?.returns.filter(item => item.status === 'requested').length || 0} new</span></button>
+        <button type="button" role="tab" aria-selected={activeTab === 'product-feedback'} className={activeTab === 'product-feedback' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('product-feedback')}>Product feedback</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'inventory'} className={activeTab === 'inventory' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('inventory')}>Inventory</button>
+        <button type="button" role="tab" aria-selected={activeTab === 'reports'} className={activeTab === 'reports' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('reports')}>Reports</button>
         <Link href="/admin/products">Products</Link>
       </nav>
       <div><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
@@ -302,28 +319,19 @@ export default function AdminPage() {
     {!data && !loading && message && <section className="admin-section"><button onClick={() => load()}>Try again</button></section>}
     {!data && !loading && !message && <p>Store operations are ready to load. <button onClick={() => load()}>Load dashboard</button></p>}
     {data && <>
-      <section className="admin-stats">
-        <div><span>Orders</span><b>{data.orders.length}</b></div>
-        <div><span>Order value</span><b>₹{orderValue.toLocaleString('en-IN')}</b></div>
-        <div><span>Low stock</span><b>{data.lowStock.length}</b></div>
-        <div><span>Open returns</span><b>{data.returns.filter(item => item.status === 'requested').length}</b></div>
-      </section>
-
-      <section className="admin-section">
-        <h2>Store management</h2>
-        <div className="admin-quick-links">
-          <Link href="/admin/products">Products &amp; photos <span>Add products, upload/replace photos, edit selling price and MRP, sizes and stock →</span></Link>
-          <Link href="/admin/delivery">Delivery settings <span>Serviceable PIN codes, shipping charges and delivery ranges →</span></Link>
-          <a href="#orders">Orders &amp; fulfilment <span>Confirm, pack, ship, deliver or cancel orders →</span></a>
-          <a href="#inventory">Inventory <span>Review low stock and record stock adjustments →</span></a>
-          <a href="#returns">Returns &amp; exchanges <span>Approve, reject and record return outcomes →</span></a>
-          <a href="#reports">Store reports <span>Review sales totals and order status summary →</span></a>
+      {activeTab === 'reports' && <section className="admin-section" id="reports" role="tabpanel" aria-label="Reports">
+        <h2>Reports &amp; store overview</h2>
+        <div className="admin-stats">
+          <div><span>Orders</span><b>{data.orders.length}</b></div>
+          <div><span>Order value</span><b>₹{orderValue.toLocaleString('en-IN')}</b></div>
+          <div><span>Low stock</span><b>{data.lowStock.length}</b></div>
+          <div><span>Open returns</span><b>{data.returns.filter(item => item.status === 'requested').length}</b></div>
         </div>
-      </section>
-      <StoreAnalytics token={token} />
+        <StoreAnalytics token={token} />
+      </section>}
 
 
-      <section className="admin-section" id="orders">
+      {activeTab === 'orders' && <section className="admin-section" id="orders" role="tabpanel" aria-label="orders">
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (CSV)'}</button></div>
         <div className="admin-table">
           {data.orders.map(order => {
@@ -344,9 +352,9 @@ export default function AdminPage() {
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
         </div>
-      </section>
+      </section>}
 
-      <section className="admin-section" id="returns">
+      {activeTab === 'returns' && <section className="admin-section" id="returns" role="tabpanel" aria-label="returns">
         <h2>Returns &amp; exchanges</h2>
         <p>Customer requests must be made within 7 days of delivery. Items must be unused, unwashed, unaltered and undamaged, with original tags and packaging. Approve only after eligibility review; mark received after inspection. For a refund, complete the actual transfer first, then record its reference, method and amount. This dashboard records the refund; it does not transfer money automatically.</p>
         <div className="admin-table">
@@ -370,9 +378,9 @@ export default function AdminPage() {
             </span>
           </div>) : <p>No return or exchange requests yet.</p>}
         </div>
-      </section>
+      </section>}
 
-      <section className="admin-section" id="product-feedback">
+      {activeTab === 'product-feedback' && <section className="admin-section" id="product-feedback" role="tabpanel" aria-label="product-feedback">
         <h2>Product feedback &amp; reviews</h2>
         <p>Only reviews linked to delivered purchases are accepted. Approve genuine feedback to publish it on the product; reject inappropriate or unrelated submissions.</p>
         <div className="admin-table">
@@ -381,9 +389,9 @@ export default function AdminPage() {
             <span><b>{review.status.toUpperCase()}</b>{review.status === 'pending' && <><button onClick={() => moderateReview(review.id,'approved')}>Approve &amp; publish</button><button onClick={() => moderateReview(review.id,'rejected')}>Reject</button></>}</span>
           </div>) : <p>No product feedback submitted yet.</p>}
         </div>
-      </section>
+      </section>}
 
-      <section className="admin-section" id="inventory">
+      {activeTab === 'inventory' && <section className="admin-section" id="inventory" role="tabpanel" aria-label="inventory">
         <h2>Low-stock inventory</h2>
         <div className="admin-table">
           {data.lowStock.length ? data.lowStock.map((variant: any) => <div className="admin-row" key={variant.id}>
@@ -403,17 +411,8 @@ export default function AdminPage() {
             <span><b>{entry.previous_stock} → {entry.new_stock}</b><small>{entry.adjusted_by} · {new Date(entry.created_at).toLocaleString('en-IN')}</small></span>
           </div>) : <p>No stock adjustments have been recorded yet.</p>}
         </div>
-      </section>
+      </section>}
 
-      <section className="admin-section" id="products">
-        <h2>Products</h2>
-        <div className="admin-table">
-          {data.products.map(product => <div className="admin-row" key={product.id}>
-            <span><b>{product.name}</b><small>{product.category} · {product.product_variants?.length || 0} variants</small></span>
-            <span>₹{Number(product.price_inr).toLocaleString('en-IN')} · {product.is_active ? 'Live' : 'Draft'}</span>
-          </div>)}
-        </div>
-      </section>
     </>}
   </main>;
 }
