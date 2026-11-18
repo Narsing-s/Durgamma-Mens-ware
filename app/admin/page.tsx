@@ -333,22 +333,33 @@ export default function AdminPage() {
 
       {activeTab === 'orders' && <section className="admin-section" id="orders" role="tabpanel" aria-label="orders">
         <div className="admin-section-heading"><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ORDERS (EXCEL)'}</button></div>
-        <div className="admin-table">
+        <div className="admin-table admin-orders-table">
+          <div className="admin-orders-columns" aria-hidden="true"><span>ORDER / CUSTOMER</span><span>AMOUNT</span><span>STATUS</span><span>ACTION</span></div>
           {data.orders.map(order => {
             const nextStatuses = order.order_status === 'pending' ? ['confirmed', 'cancelled']
               : order.order_status === 'confirmed' ? ['packed', 'cancelled']
               : order.order_status === 'packed' ? ['shipped', 'cancelled']
-              : order.order_status === 'shipped' ? [] : [];
-            return <div className="admin-row admin-order-row" key={order.id}>
-              <span><b>{order.order_number}</b><small>{order.customer_name} · {order.email}</small></span>
-              <span>₹{Number(order.total_inr).toLocaleString('en-IN')}</span>
-              <select value={order.order_status} disabled={!nextStatuses.length} onChange={event => updateOrder(order.id, event.target.value)}>
-                <option value={order.order_status}>{order.order_status[0].toUpperCase() + order.order_status.slice(1)}</option>
-                {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
-              </select>
-              {order.order_status === 'pending' && <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>}
-              {order.order_status === 'shipped' && <span className="admin-delivery-verify"><small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small><button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button><input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => { setMessage(''); setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) })); }}/><button disabled={!!deliveryBusy[order.id] || (deliveryCodes[order.id] || '').length !== 6} onClick={() => deliveryAction(order.id, 'verify', order.order_number)}>{deliveryBusy[order.id] === 'verify' ? 'VERIFYING…' : 'Verify & deliver'}</button><button disabled={!!deliveryBusy[order.id]} onClick={() => deliveryAction(order.id, 'resend', order.order_number)}>{deliveryBusy[order.id] === 'resend' ? 'SENDING OTP…' : 'Resend OTP'}</button></span>}
-            </div>;
+              : [];
+            return <article className="admin-order-card" key={order.id}>
+              <div className="admin-order-row">
+                <div className="admin-order-customer"><b>{order.order_number}</b><small>{order.customer_name} · {order.email}</small></div>
+                <div className="admin-order-amount">₹{Number(order.total_inr).toLocaleString('en-IN')}</div>
+                <div className="admin-order-status"><select aria-label={'Status for ' + order.order_number} value={order.order_status} disabled={!nextStatuses.length} onChange={event => updateOrder(order.id, event.target.value)}>
+                  <option value={order.order_status}>{order.order_status[0].toUpperCase() + order.order_status.slice(1)}</option>
+                  {nextStatuses.map(status => <option key={status} value={status}>{status[0].toUpperCase() + status.slice(1)}</option>)}
+                </select></div>
+                <div className="admin-order-actions">{order.order_status === 'pending'
+                  ? <button disabled={!!emailSending[order.id]} onClick={() => resendConfirmation(order.id)}>{emailSending[order.id] ? 'SENDING…' : 'RESEND CONFIRMATION'}</button>
+                  : <span className="admin-order-no-action">—</span>}</div>
+              </div>
+              {order.order_status === 'shipped' && <div className="admin-delivery-verify">
+                <small>{order.shipping_provider || 'Courier not recorded'} · {order.tracking_number || 'No AWB'}{order.expected_delivery_date ? ' · ETA ' + order.expected_delivery_date : ''}</small>
+                <button onClick={() => updateOrder(order.id, 'shipped')}>Update tracking</button>
+                <input aria-label={'Delivery OTP for ' + order.order_number} inputMode="numeric" maxLength={6} placeholder="6-digit customer OTP" value={deliveryCodes[order.id] || ''} onChange={event => { setMessage(''); setDeliveryCodes(current => ({ ...current, [order.id]: event.target.value.replace(/\D/g, '').slice(0, 6) })); }}/>
+                <button disabled={!!deliveryBusy[order.id] || (deliveryCodes[order.id] || '').length !== 6} onClick={() => deliveryAction(order.id, 'verify', order.order_number)}>{deliveryBusy[order.id] === 'verify' ? 'VERIFYING…' : 'Verify & deliver'}</button>
+                <button disabled={!!deliveryBusy[order.id]} onClick={() => deliveryAction(order.id, 'resend', order.order_number)}>{deliveryBusy[order.id] === 'resend' ? 'SENDING OTP…' : 'Resend OTP'}</button>
+              </div>}
+            </article>;
           })}
           {!data.orders.length && <p>No orders have been placed yet.</p>}
         </div>
