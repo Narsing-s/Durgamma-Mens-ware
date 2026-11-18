@@ -136,7 +136,7 @@ export default function AdminPage() {
     }
   }
 
-  async function updateReturn(id: string, status: string, orderTotal?: number) {
+  async function updateReturn(id: string, status: string, orderTotal?: number, correctMistakenExchange = false) {
     const note = prompt('Optional note for the customer') || '';
     let refundReference: string | undefined;
     let refundMethod: string | undefined;
@@ -151,7 +151,7 @@ export default function AdminPage() {
     const response = await fetch('/api/admin/returns/' + id, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
-      body: JSON.stringify({ status, note, refundReference, refundMethod, refundAmount }),
+      body: JSON.stringify({ status, note, refundReference, refundMethod, refundAmount, correctMistakenExchange }),
     });
     const result = await response.json();
     setMessage(response.ok ? (result.emailWarning || (result.emailSent === false ? 'Return updated, but customer email was not sent.' : 'Return request updated.')) : result.error || 'Return update failed.');
@@ -326,10 +326,11 @@ export default function AdminPage() {
                 <button onClick={() => updateReturn(item.id, 'rejected')}>Reject</button>
               </>}
               {item.status === 'approved' && <button onClick={() => updateReturn(item.id, 'received')}>Mark received</button>}
-              {item.status === 'received' && <>
-                <button onClick={() => updateReturn(item.id, 'refunded', Number(item.order_items?.line_total_inr || item.orders?.total_inr || 0))}>Record manual refund</button>
-                <button onClick={() => updateReturn(item.id, 'exchanged')}>Record exchange completed</button>
-              </>}
+              {item.status === 'received' && (item.request_type === 'return'
+                ? <button onClick={() => updateReturn(item.id, 'refunded', Number(item.order_items?.line_total_inr || item.orders?.total_inr || 0))}>Record manual refund</button>
+                : <button onClick={() => updateReturn(item.id, 'exchanged')}>Record exchange completed</button>)}
+              {item.status === 'exchanged' && item.request_type === 'return' &&
+                <button onClick={() => updateReturn(item.id, 'received', undefined, true)}>Correct mistaken status → RECEIVED</button>}
             </span>
           </div>) : <p>No return or exchange requests yet.</p>}
         </div>
