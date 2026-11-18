@@ -22,7 +22,7 @@ type Order = {
 
 type Filter = 'all' | 'active' | 'delivered' | 'returns';
 const money = (value: number) => '₹' + Number(value || 0).toLocaleString('en-IN');
-const titleCase = (value: string) => (value || 'unknown').replace(/_/g, ' ').replace(/\\b\\w/g, (letter) => letter.toUpperCase());
+const titleCase = (value: string) => (value || 'unknown').replace(/_/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 const activeStatus = (status: string) => !['delivered', 'cancelled', 'refunded'].includes(status.toLowerCase());
 
 const panel: React.CSSProperties = { border: '1px solid #e9e2d7', borderRadius: 13, background: '#fff', padding: 16 };
