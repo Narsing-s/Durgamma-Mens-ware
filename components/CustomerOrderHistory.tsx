@@ -85,7 +85,7 @@ export default function CustomerOrderHistory({ supabase }: { supabase: SupabaseC
         </button>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 10, marginBottom: 18 }}>
+      <div className="customer-dashboard-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(4,minmax(0,1fr))', gap: 10, marginBottom: 18 }}>
         {[
           { label: 'Total orders', value: stats.total, icon: ShoppingBag },
           { label: 'In progress', value: stats.active, icon: Truck },
@@ -139,7 +139,7 @@ export default function CustomerOrderHistory({ supabase }: { supabase: SupabaseC
           ))}
         </div>
       )}
-      <style>{'@media(max-width:560px){.customer-dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}'}</style>
+      <style>{'@media(max-width:560px){.customer-dashboard-stats{grid-template-columns:repeat(2,minmax(0,1fr))!important}}'}</style>
     </section>
   );
 }
