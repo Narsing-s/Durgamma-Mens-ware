@@ -157,7 +157,7 @@ export async function GET(request: NextRequest) {
     status: 200,
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="durgamma-orders-' + date + '.xlsx"',
+      'Content-Disposition': 'attachment; filename="durgamma-orders-by-date-' + date + '.xlsx"',
       'Cache-Control': 'no-store, private',
       'X-Content-Type-Options': 'nosniff',
     },
