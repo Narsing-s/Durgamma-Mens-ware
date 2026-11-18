@@ -31,6 +31,38 @@ const channels = [
     docs: 'https://mmip.myntrainfo.com/',
     requirements: ['Business / brand eligibility confirmation', 'GST and business documents requested during onboarding', 'Myntra seller / merchant approval and MMIP access'],
   },
+  {
+    name: 'Amazon India',
+    stage: 'Seller registration + SP-API approval required',
+    description: 'Register in Amazon Seller Central. After the seller account is active, complete the SP-API developer onboarding and create/authorise an application. Amazon states private SP-API seller apps require a Professional selling account; check current India plan fees before upgrading.',
+    register: 'https://sell.amazon.in/',
+    docs: 'https://developer-docs.amazon.com/sp-api/docs/sp-api-registration-overview',
+    requirements: ['Business, PAN/GST details as applicable and active bank account', 'Active Seller Central account', 'SP-API developer profile, application registration and seller authorisation'],
+  },
+  {
+    name: 'JioMart',
+    stage: 'Seller interest / onboarding required',
+    description: 'Submit the official JioMart seller interest form or contact its onboarding team. Ask JioMart to confirm fashion-category acceptance and whether API or approved integration-partner access is available for your seller account.',
+    register: 'https://identity.seller.jiomart.com/seller_interest_form',
+    docs: 'https://identity.seller.jiomart.com/jiomartseller',
+    requirements: ['Business name and contact details', 'GST status and pickup pincode', 'Brand authorisation, trademark or MSME proof if requested', 'Written confirmation of integration/API access before development'],
+  },
+  {
+    name: 'AJIO Commerce',
+    stage: 'Brand / seller onboarding required',
+    description: 'Apply through AJIO Commerce / Reliance Seller Central. AJIO lists GSTIN, PAN, brand trademark or authorisation proof and bank details among its seller requirements. Complete brand review before planning catalogue sync.',
+    register: 'https://seller.ajio.com/ajiocommerce/',
+    docs: 'https://seller.ajio.com/ajiocommerce/resources/',
+    requirements: ['Regular GSTIN and PAN', 'Trademark certificate or brand-authorisation letter', 'Bank account and KYC details', 'AJIO seller approval and any integration access issued to the account'],
+  },
+  {
+    name: 'Snapdeal',
+    stage: 'Seller registration + API access request required',
+    description: 'Register through Snapdeal Seller Onboarding. Its Seller API documentation covers inventory, pricing and order management; API access requires a separate API-user request and platform-issued credentials.',
+    register: 'https://setu.snapdeal.com/',
+    docs: 'https://sellerapis.snapdeal.com/reference/overview',
+    requirements: ['Mobile number, email, GST and bank details', 'Store and pickup-address details', 'Approved seller account', 'Snapdeal API-user approval and separate sandbox/production access tokens'],
+  },
 ];
 
 export default function MarketplaceOnboardingPage() {
@@ -78,8 +110,8 @@ export default function MarketplaceOnboardingPage() {
         <div className="admin-header-actions"><Link href="/admin">Back to admin</Link></div>
       </header>
       <section className="admin-section">
-        <h2>Connect your sales channels</h2>
-        <p>All three seller accounts are currently unregistered. Complete marketplace approval first; live API synchronisation cannot start until each platform grants seller access and the required credentials.</p>
+        <h2>Explore and connect sales channels</h2>
+        <p>Marketplace seller accounts are not yet confirmed as registered or approved. Use these official onboarding links to explore additional channels; live API synchronisation cannot start until each platform grants seller access and the required credentials.</p>
         <p className="admin-message" role="status">{message}</p>
         {gate === 'allowed' ? (
           <>
@@ -107,7 +139,7 @@ export default function MarketplaceOnboardingPage() {
                 <li>Test listing and inventory updates in the platform’s approved test process where available.</li>
                 <li>Enable order, shipment, cancellation and return synchronisation after reconciliation tests.</li>
               </ol>
-              <p>We will keep your website inventory and order records as the source of truth only after the marketplace stock rules and sync direction are agreed and tested. No live listings or orders are changed from this onboarding page.</p>
+              <p>We will keep your website inventory and order records as the source of truth only after the marketplace stock rules and sync direction are agreed and tested. No live listings or orders are changed from this onboarding page.</p><p><strong>Note:</strong> Shopsy is part of the Flipkart seller ecosystem; treat it as a Flipkart channel rather than creating a duplicate independent connection unless Flipkart issues separate access.</p>
             </div>
           </>
         ) : gate === 'checking' ? <p>Checking permissions…</p> : (
