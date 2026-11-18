@@ -36,7 +36,10 @@ export async function POST(request: NextRequest) {
 
   let body: Record<string, unknown>;
   try { body = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
-  const token = typeof body.token === 'string' ? body.token : '';
+  const rawToken = typeof body.token === 'string' ? body.token.trim() : '';
+  // An order number entered in the tracking field is not a secure token.
+  // Ignore non-token values and use the order number + checkout email path.
+  const token = /^[A-Za-z0-9_-]{40,60}$/.test(rawToken) ? rawToken : '';
   const orderNumber = typeof body.orderNumber === 'string' ? body.orderNumber.trim().toUpperCase() : '';
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
   const requestType = body.requestType;
