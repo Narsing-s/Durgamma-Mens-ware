@@ -58,3 +58,19 @@ test('admin inventory adjustments are visible as an optional owner-only audit hi
   assert.match(page, /entry\.previous_stock/);
   assert.match(page, /entry\.adjusted_by/);
 });
+
+
+test('admin order CSV export is owner-authenticated, paginated, private and spreadsheet-safe', () => {
+  const route = read('app/api/admin/orders/export/route.ts');
+  const page = read('app/admin/page.tsx');
+  assert.match(route, /requireAdmin\(request\)/);
+  assert.match(route, /\.range\(offset, offset \+ pageSize - 1\)/);
+  assert.match(route, /Content-Disposition/);
+  assert.match(route, /Cache-Control.*no-store, private/);
+  assert.match(route, /replace\(\/\"\/g, '\"\"'\)/);
+  assert.match(route, /formula marker/);
+  assert.match(route, /payment_status/);
+  assert.match(page, /EXPORT ALL ORDERS \(CSV\)/);
+  assert.match(page, /Authorization: 'Bearer ' \+ token/);
+  assert.match(page, /\/api\/admin\/orders\/export/);
+});
