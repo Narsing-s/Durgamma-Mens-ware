@@ -114,7 +114,7 @@ export default function AccountPage() {
             </div>
           </section>
 
-          <section style={{ background: '#fff', border: '1px solid #e8e1d5', borderRadius: 14, padding: 'clamp(24px, 5vw, 38px)', boxShadow: '0 18px 55px rgba(36,31,22,.07)' }}>
+          <section style={{ width: '100%', boxSizing: 'border-box', background: '#fff', border: '1px solid #e8e1d5', borderRadius: 16, padding: 'clamp(20px, 4vw, 34px)', boxShadow: '0 18px 55px rgba(36,31,22,.07)', margin: user ? '24px auto 0' : 0 }}>
             {user ? (
               <div>
                 <div style={{ width: 48, height: 48, borderRadius: 50, background: '#f2eadb', display: 'grid', placeItems: 'center', color: '#8d7040' }}><UserRound size={22}/></div>
