@@ -19,6 +19,7 @@ export default function AdminPage() {
   const [token, setToken] = useState('');
   const [data, setData] = useState<StoreData | null>(null);
   const [loading, setLoading] = useState(false);
+  const [exportingOrders, setExportingOrders] = useState(false);
   const [message, setMessage] = useState('');
   const supabase = getSupabaseBrowserClient();
   const supabaseConfigIssue = getSupabaseBrowserConfigIssue();
@@ -115,6 +116,41 @@ export default function AdminPage() {
       setMessage('Unable to reach the email service. Please retry.');
     } finally {
       setEmailSending(current => ({ ...current, [id]: false }));
+    }
+  }
+
+  async function exportOrders() {
+    if (!token || exportingOrders) return;
+    setExportingOrders(true);
+    setMessage('');
+    try {
+      const response = await fetch('/api/admin/orders/export', {
+        method: 'GET',
+        cache: 'no-store',
+        headers: { Accept: 'text/csv', Authorization: 'Bearer ' + token },
+      });
+      if (!response.ok) {
+        const result = await response.json().catch(() => ({}));
+        setMessage(result.error || 'Order export failed. Please retry.');
+        return;
+      }
+      const blob = await response.blob();
+      const disposition = response.headers.get('Content-Disposition') || '';
+      const filename = disposition.match(/filename="([^"]+)"/)?.[1] || 'durgamma-orders.csv';
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setMessage('Order CSV exported successfully.');
+    } catch (error) {
+      console.error('Order export failed:', error);
+      setMessage('Unable to export orders. Check your connection and try again.');
+    } finally {
+      setExportingOrders(false);
     }
   }
 
@@ -288,7 +324,7 @@ export default function AdminPage() {
 
 
       <section className="admin-section" id="orders">
-        <h2>Orders</h2>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (CSV)'}</button></div>
         <div className="admin-table">
           {data.orders.map(order => {
             const nextStatuses = order.order_status === 'pending' ? ['confirmed', 'cancelled']
