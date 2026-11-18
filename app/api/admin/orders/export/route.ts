@@ -109,7 +109,7 @@ export async function GET(request: NextRequest) {
   workbook.title = 'Durgamma Menswear Orders';
   workbook.created = new Date();
   workbook.modified = new Date();
-  workbook.views = [{ x: 0, y: 0, width: 18000, height: 10000, firstSheet: 0, activeTab: 0 }];
+  workbook.views = [{ visibility: 'visible', x: 0, y: 0, width: 18000, height: 10000, firstSheet: 0, activeTab: 0 }];
 
   const summary = workbook.addWorksheet('Summary');
   summary.columns = [
