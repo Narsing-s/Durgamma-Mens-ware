@@ -312,7 +312,7 @@ export default function AdminPage() {
         <button type="button" role="tab" aria-selected={activeTab === 'reports'} className={activeTab === 'reports' ? 'admin-tab-button active' : 'admin-tab-button'} onClick={() => selectTab('reports')}>Reports</button>
         <Link href="/admin/products">Products</Link>
       </nav>
-      <div><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
+      <div className="admin-header-actions"><button onClick={() => load()}>Refresh</button><button onClick={signOut}>Sign out</button></div>
     </header>
     {message && <p className="admin-message" role="status">{message}</p>}
     {loading && <p role="status">Loading store operations…</p>}
@@ -332,14 +332,14 @@ export default function AdminPage() {
 
 
       {activeTab === 'orders' && <section className="admin-section" id="orders" role="tabpanel" aria-label="orders">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' }}><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (CSV)'}</button></div>
+        <div className="admin-section-heading"><h2>Orders</h2><button type="button" onClick={exportOrders} disabled={exportingOrders}>{exportingOrders ? 'EXPORTING…' : 'EXPORT ALL ORDERS (CSV)'}</button></div>
         <div className="admin-table">
           {data.orders.map(order => {
             const nextStatuses = order.order_status === 'pending' ? ['confirmed', 'cancelled']
               : order.order_status === 'confirmed' ? ['packed', 'cancelled']
               : order.order_status === 'packed' ? ['shipped', 'cancelled']
               : order.order_status === 'shipped' ? [] : [];
-            return <div className="admin-row" key={order.id}>
+            return <div className="admin-row admin-order-row" key={order.id}>
               <span><b>{order.order_number}</b><small>{order.customer_name} · {order.email}</small></span>
               <span>₹{Number(order.total_inr).toLocaleString('en-IN')}</span>
               <select value={order.order_status} disabled={!nextStatuses.length} onChange={event => updateOrder(order.id, event.target.value)}>
