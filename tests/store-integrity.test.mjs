@@ -46,3 +46,15 @@ test('service-role credentials are not exposed through public environment variab
   const browserClient = read('lib/supabase-browser.ts');
   assert.doesNotMatch(browserClient, /SUPABASE_SERVICE_ROLE_KEY/);
 });
+
+
+test('admin inventory adjustments are visible as an optional owner-only audit history', () => {
+  const route = read('app/api/admin/store/route.ts');
+  const page = read('app/admin/page.tsx');
+  assert.match(route, /from\('inventory_adjustments'\)/);
+  assert.match(route, /previous_stock,new_stock,reason,adjusted_by,created_at/);
+  assert.match(route, /inventoryHistoryWarning/);
+  assert.match(page, /Recent stock adjustments/);
+  assert.match(page, /entry\.previous_stock/);
+  assert.match(page, /entry\.adjusted_by/);
+});
